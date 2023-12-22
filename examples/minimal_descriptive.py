@@ -15,6 +15,6 @@ sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_t
 # Run simulation
 steps = 100
 for step in range(steps):
-    sim.make_step()
+    sim.step()
     if step % 10 == 0:
         print(f'Energy after {step} steps: {sim.get_potential_energy()}')

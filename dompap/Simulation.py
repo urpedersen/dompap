@@ -269,18 +269,18 @@ class Simulation:
                              self.sigma_func, self.epsilon_func)
         return forces
 
-    def make_step(self):
+    def step(self):
         """ Make one step in the simulation
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.make_step()
+        >>> sim.step()
         """
-        from .integrator import _make_step
+        from .integrator import make_one_step
         self.update_neighbor_list()
         forces = self.get_forces()
         old_state = self.positions, self.velocities, self.betas
         parameters = self.time_step, self.temperature_target, self.temperature_damping_time
-        new_state = _make_step(*old_state, forces, self.masses, *parameters)
+        new_state = make_one_step(*old_state, forces, self.masses, *parameters)
         self.positions, self.velocities, self.betas = new_state
 
     def run(self, steps: int = 1000):
@@ -290,7 +290,7 @@ class Simulation:
         >>> sim.run(steps=1000)
         """
         for i in range(steps):
-            self.make_step()
+            self.step()
 
     def set_integrator(self,
                        time_step: float = 0.01,
@@ -381,7 +381,7 @@ def test_simulation():
     sim = Simulation()
     steps = 100
     for i in range(steps):
-        sim.make_step()
+        sim.step()
     assert sim.get_potential_energy() > 0.0
 
 if __name__ == '__main__':

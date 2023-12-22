@@ -45,7 +45,7 @@ print(f'Initial temperature: {sim.get_temperature():0.4}')
 print('Equilibrating...')
 steps = 100
 for step in range(steps):
-    sim.make_step()
+    sim.step()
     if step % 10 == 0:
         print(f'Step {step}: E = {sim.get_potential_energy():0.1f}, T= {sim.get_temperature():0.3f}')
 
@@ -58,7 +58,7 @@ steps = 400
 time = 0.0
 for step in range(steps):
     E_kin = sim.get_kinetic_energy()
-    sim.make_step()
+    sim.step()
     E_kin = (sim.get_kinetic_energy() + E_kin) / 2
     time += sim.time_step
     if step % 20 == 0:

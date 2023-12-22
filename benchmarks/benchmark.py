@@ -9,12 +9,12 @@ toc = perf_counter()
 print(f'Time to setup: {toc - tic:.2f} seconds')
 
 tic = perf_counter()
-sim.make_step()
+sim.step()
 toc = perf_counter()
 print(f'Time to make first step: {toc - tic:.2f} seconds')
 
 tic = perf_counter()
-sim.make_step()
+sim.step()
 toc = perf_counter()
 print(f'Time to make second step: {(toc - tic)*1000:.3f} milliseconds')
 
