@@ -1,6 +1,7 @@
 import numpy as np
 import numba
 
+
 @numba.njit
 def make_one_step_leap_frog(positions: np.ndarray,
                             velocities: np.ndarray,
@@ -13,6 +14,7 @@ def make_one_step_leap_frog(positions: np.ndarray,
     return positions, velocities
 
 
+@numba.njit
 def make_one_step(positions: np.ndarray,
                   velocities: np.ndarray,
                   betas: np.ndarray,
@@ -25,10 +27,7 @@ def make_one_step(positions: np.ndarray,
     Reference: https://arxiv.org/1303.7011, Section II.C, Eqs. (16) and (17).
     """
     alphas = masses / temperature_damping_time
-    random_numbers = np.empty_like(velocities)
-    for i in range(velocities.shape[0]):
-        for j in range(velocities.shape[1]):
-            random_numbers[i, j] = np.random.normal()  # Normal distribution with mean 0 and variance 1
+    random_numbers = np.random.normal(0, 1, (velocities.shape[0], velocities.shape[1]))
     beta_variance = 2 * alphas * temperature_target
     new_betas = np.sqrt(beta_variance) * random_numbers
     numerator = 1.0 - alphas * time_step / 2.0
@@ -107,7 +106,7 @@ def test_energy_conservation(verbose=False):
         forces = compute_gravitational_forces(positions, masses)
         positions, velocities = make_one_step_leap_frog(positions, velocities, forces, masses, time_step)
         potential_energy = calculate_potential_energy(positions, masses)
-        kinetic_energy = 0.5*(kinetic_energy + calculate_kinetic_energy(velocities, masses))
+        kinetic_energy = 0.5 * (kinetic_energy + calculate_kinetic_energy(velocities, masses))
         total_energy = potential_energy + kinetic_energy
         data.append([float(potential_energy), float(kinetic_energy), float(total_energy)])
         if verbose:
