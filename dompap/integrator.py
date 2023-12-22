@@ -1,7 +1,6 @@
 import numpy as np
 import numba
 
-
 @numba.njit
 def _make_step(positions: np.ndarray,
                velocities: np.ndarray,
@@ -10,7 +9,7 @@ def _make_step(positions: np.ndarray,
                masses: np.ndarray,
                time_step: np.float64,
                temperature_target: np.float64,
-               temperature_damping_time: np.float64) -> tuple:
+               temperature_damping_time: np.float64) -> [np.ndarray, np.ndarray, np.ndarray]:
     """ Make one step in the simulation using Leap-Frog G-JF thermostat
     Reference: https://arxiv.org/1303.7011, Section II.C, Eqs. (16) and (17).
     """

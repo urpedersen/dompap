@@ -136,6 +136,11 @@ class Simulation:
         self.box_vectors = np.array(cells, dtype=np.float64) * np.array(lattice_constants, dtype=np.float64)
         self.positions = generate_positions(unit_cell_coordinates, cells, lattice_constants)
         self.image_positions = np.zeros(shape=(self.positions.shape[0], self.positions.shape[1]), dtype=np.int32)
+        # Set betas and velocities if shape is not correct
+        if self.betas.shape != self.positions.shape:
+            self.betas = np.zeros(shape=self.positions.shape, dtype=np.float64)
+        if self.velocities.shape != self.positions.shape:
+            self.velocities = np.random.normal(loc=0.0, scale=1.0, size=self.positions.shape).astype(np.float64)
 
     def set_masses(self, masses: float = 1.0):
         """ Set masses of particles
@@ -235,12 +240,12 @@ class Simulation:
         self.positions = self.positions * scale_factor
         self.set_neighbor_list()
 
-    def get_total_energy(self):
+    def get_potential_energy(self):
         """ Get total energy of the system
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.scale_box(0.5)
-        >>> print(sim.get_total_energy())
+        >>> print(sim.get_potential_energy())
         167.06442443573454
         """
         from .potential import _get_total_energy
@@ -309,14 +314,75 @@ class Simulation:
         """
         return self.positions.shape[0]
 
+    def get_density(self) -> float:
+        """ Get density of the system
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(f'Density: {sim.get_density():.3f}')
+        Density: 1.000
+        """
+        return self.number_of_particles() / np.prod(self.box_vectors)
+
+    def set_density(self, density: float = 1.0):
+        """ Set density of the system
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.set_density(density=0.9)
+        >>> print(f'Density: {sim.get_density():.3f}')
+        Density: 0.900
+        """
+        dimensions = self.box_vectors.shape[0]
+        current_density = self.get_density()
+        scale_factor = (current_density / density) ** (1 / dimensions)
+        self.scale_box(scale_factor)
+
+    def get_temperature(self):
+        """ Get temperature of the system
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(f'Temperature: {sim.get_temperature():.0f}')
+        Temperature: 1
+        """
+        m = self.masses[:, 0]
+        v = self.velocities
+        dimensions_of_space = self.box_vectors.shape[0]
+        number_of_particles = self.number_of_particles()
+        v_squared = np.sum(v ** 2, axis=1)
+        temperature = np.sum(m * v_squared) / (dimensions_of_space * number_of_particles)
+        return temperature
+
+    def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
+        """ Get radial distribution function
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> r_bins = np.linspace(0.1, 3.0, 100)
+        >>> g_r = sim.get_radial_distribution_function(r_bins=r_bins)
+        """
+        from .positions import get_radial_distribution_function
+        r, g_r = get_radial_distribution_function(self.positions, self.positions, self.box_vectors, r_bins)
+        return r, g_r
+
+    def get_number_of_particles(self):
+        return self.positions.shape[0]
+
+    def get_kinetic_energy(self):
+        """ Get kinetic energy of the system
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> E_kin = sim.get_kinetic_energy()
+        """
+        v_squared = np.sum(self.velocities**2, axis=1)
+        m = self.masses[:, 0]
+        m_v2 = m * v_squared
+        return 0.5 * np.sum(m_v2)
+
+
 def test_simulation():
     sim = Simulation()
-    print(sim)
     steps = 100
     for i in range(steps):
         sim.make_step()
-    print(sim)
-
+    assert sim.get_potential_energy() > 0.0
 
 if __name__ == '__main__':
     test_simulation()

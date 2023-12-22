@@ -45,9 +45,12 @@ def test_neighbor_list_is_old():
     box_vectors = np.array([5, 5, 5], dtype=np.float64)
     skin = np.float64(0.5)
     assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == False
-    old_positions[0] = [0.5, 0.5, 0.5]
+    old_positions[0] = [skin/2 - 0.01, 0.0, 0.0]  # Particle 0 has moved less 0.01 larger half the skin
+    assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == False
+    old_positions[0] = [skin/2 + 0.01, 0.0, 0.0]  # Particle 0 has moved 0.01 larger half the skin
     assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == True
-
+    old_positions[0] = [0.0 + box_vectors[0], 0.0, 0.0]  # Particle 0 has moved one box length to its own image
+    assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == False
 
 def test_neighbor_list_is_old_skin_range():
     positions = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float64)
@@ -67,6 +70,9 @@ def get_number_of_neighbors(neighbor_list):
     """ Get number of neighbours for each particle """
     return np.sum(neighbor_list != -1, axis=1)
 
+def test_get_number_of_neighbors_all_minus_one():
+    neighbor_list = np.array([[-1, -1, -1], [-1, -1, -1]], dtype=np.int32)
+    assert np.all(get_number_of_neighbors(neighbor_list) == 0)  # No particles have neighbors
 
 def test_get_number_of_neighbors():
     neighbor_list = np.array([[1, 2, -1], [1, -1, -1]], dtype=np.int32)
