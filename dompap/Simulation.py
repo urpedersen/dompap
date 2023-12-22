@@ -1,4 +1,5 @@
 import numpy as np
+import numba
 
 from dataclasses import dataclass, field
 
@@ -38,13 +39,12 @@ def default_masses():
     return np.ones(shape=(DEFAULT_NUMBER_OF_PARTICLES, 1), dtype=np.float64)
 
 
-def default_diameters():
-    return np.ones(shape=(DEFAULT_NUMBER_OF_PARTICLES, 1), dtype=np.float64)
+def default_func_n_m():
+    return lambda n, m: np.float64(1.0)
 
 
-def default_epsilons():
-    return np.ones(shape=(DEFAULT_NUMBER_OF_PARTICLES, 1), dtype=np.float64)
-
+def default_func_r():
+    return lambda r: np.float64(0.0)
 
 @dataclass
 class Simulation:
@@ -69,8 +69,6 @@ class Simulation:
         positions: [[0. 0. 0.]] ... [[4. 4. 4.]]
         box_vectors: [5. 5. 5.]
         masses: [[1.]] ... [[1.]]
-        diameters: [[1.]] ... [[1.]]
-        epsilons: [[1.]] ... [[1.]]
     """
     # System properties
     positions: np.ndarray = field(default_factory=default_positions)
@@ -85,8 +83,8 @@ class Simulation:
 
     # Particle properties
     masses: np.ndarray = field(default_factory=default_masses)
-    sigmas: np.ndarray = field(default_factory=default_diameters)
-    epsilons: np.ndarray = field(default_factory=default_epsilons)
+    # sigmas: np.ndarray = field(default_factory=default_diameters)
+    # epsilons: np.ndarray = field(default_factory=default_epsilons)
 
     # Neighbor list parameters
     pair_potential_r_cut: np.float64 = np.float64(1.0)
@@ -98,27 +96,28 @@ class Simulation:
     temperature_target: np.float64 = np.float64(1.0)
     temperature_damping_time: np.float64 = np.float64(0.1)
 
-    # Functions
+    # Pair potential
     pair_potential: callable = None
     pair_potential_str: str = None
     pair_force: callable = None
+    epsilon_func: callable = field(default_factory=default_func_n_m)
+    sigma_func: callable = field(default_factory=default_func_n_m)
 
     def __post_init__(self):
         """ Setup neighbor list """
-        self.set_neighbor_list()
         self.set_pair_potential()
+        self.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
+        self.set_neighbor_list()
 
     def __str__(self):
         """ Print only first there and last three particles """
         return f"""Simulation:
-        positions: {self.positions[:1]} ... {self.positions[-1:]}
-        box_vectors: {self.box_vectors}
-        masses: {self.masses[:1]} ... {self.masses[-1:]}
-        diameters: {self.sigmas[:1]} ... {self.sigmas[-1:]}
-        epsilons: {self.epsilons[:1]} ... {self.epsilons[-1:]}
-        """
+    positions: {self.positions[:1]} ... {self.positions[-1:]}
+    box_vectors: {self.box_vectors}
+    masses: {self.masses[:1]} ... {self.masses[-1:]}"""
 
-    def set_positions(self, unit_cell_coordinates: tuple = ([0.0, 0.0, 0.0],), cells: tuple = (5, 5, 5), lattice_constants: tuple = (1.0, 1.0, 1.0)):
+    def set_positions(self, unit_cell_coordinates: tuple = ([0.0, 0.0, 0.0],), cells: tuple = (5, 5, 5),
+                      lattice_constants: tuple = (1.0, 1.0, 1.0)):
         """ Set positions of particles
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -159,7 +158,6 @@ class Simulation:
         self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
                                            size=self.positions.shape).astype(np.float64)
 
-
     def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None):
         """ Update neighbour list
         >>> from dompap import Simulation
@@ -175,7 +173,14 @@ class Simulation:
             self.neighbor_list_skin = np.float64(skin)
         if max_number_of_neighbors is not None:
             self.max_number_of_neighbors = np.int32(max_number_of_neighbors)
-        global_truncation_distance = np.max(self.sigmas) * self.pair_potential_r_cut
+        # Get largest possible sigma
+        number_of_particles = self.positions.shape[0]
+        largest_sigma = 0.0
+        for n in range(number_of_particles):
+            for m in range(number_of_particles):
+                largest_sigma = max(largest_sigma, self.sigma_func(n, m))
+
+        global_truncation_distance = largest_sigma * self.pair_potential_r_cut
         positions = self.positions
         box_vectors = self.box_vectors
         cutoff_distance = global_truncation_distance + self.neighbor_list_skin
@@ -207,22 +212,14 @@ class Simulation:
             r_cut=r_cut
         )
 
-    def set_pair_potential_parameters(self, sigmas: float, epsilons: float):
+    def set_pair_potential_parameters(self, sigma: float = 1.0, epsilon: float = 1.0):
         """ Set potential parameters
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.set_pair_potential_parameters(sigmas=1.0, epsilons=1.0)
-        >>> print(sim.sigmas[:3])
-        [[1.]
-         [1.]
-         [1.]]
-        >>> print(sim.epsilons[:3])
-        [[1.]
-         [1.]
-         [1.]]
+        >>> sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
         """
-        self.sigmas = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(sigmas)
-        self.epsilons = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(epsilons)
+        self.sigma_func = numba.njit(lambda n, m: np.float64(sigma))
+        self.epsilon_func = numba.njit(lambda n, m: np.float64(epsilon))
 
     def scale_box(self, scale_factor: float):
         """ Scale box vectors and positions
@@ -249,7 +246,7 @@ class Simulation:
         from .potential import _get_total_energy
         self.update_neighbor_list()
         energy = _get_total_energy(self.positions, self.box_vectors, self.pair_potential, self.neighbor_list,
-                                   self.sigmas, self.epsilons)
+                                   self.sigma_func, self.epsilon_func)
         return float(energy)
 
     def get_forces(self) -> np.ndarray:
@@ -261,20 +258,17 @@ class Simulation:
         >>> print(f'Force on particle 0: F_x={forces[0, 0]}, F_y={forces[0, 1]}, F_z={forces[0, 2]}')
         Force on particle 0: F_x=-1.0, F_y=0.0, F_z=0.0
         """
-        from .potential import _get_forces as func
+        from .potential import _get_forces
         self.update_neighbor_list()
-        forces = func(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
-                      self.sigmas, self.epsilons)
+        forces = _get_forces(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
+                             self.sigma_func, self.epsilon_func)
         return forces
 
     def make_step(self):
         """ Make one step in the simulation
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.positions[0] = [0.5, 0.0, 0.0]
         >>> sim.make_step()
-        >>> print(sim.positions[0])
-        [0.49 0.   0.  ]
         """
         from .integrator import _make_step
         self.update_neighbor_list()
@@ -283,6 +277,15 @@ class Simulation:
         parameters = self.time_step, self.temperature_target, self.temperature_damping_time
         new_state = _make_step(*old_state, forces, self.masses, *parameters)
         self.positions, self.velocities, self.betas = new_state
+
+    def run(self, steps: int = 1000):
+        """ Run simulation
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.run(steps=1000)
+        """
+        for i in range(steps):
+            self.make_step()
 
     def set_integrator(self,
                        time_step: float = 0.01,
@@ -297,6 +300,14 @@ class Simulation:
         self.temperature_target = np.float64(target_temperature)
         self.temperature_damping_time = np.float64(temperature_damping_time)
 
+    def number_of_particles(self) -> int:
+        """ Get number of particles
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.number_of_particles())
+        125
+        """
+        return self.positions.shape[0]
 
 def test_simulation():
     sim = Simulation()

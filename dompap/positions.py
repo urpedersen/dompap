@@ -3,9 +3,10 @@ import numba
 
 
 @numba.njit
-def get_displacement_vector(position: np.ndarray, other_position: np.ndarray, box_vectors: np.ndarray) -> np.ndarray:
+def get_displacement_vector(position: np.ndarray, other_position: np.ndarray,
+                            box_vectors: np.ndarray) -> np.ndarray:
+    """ Calculate displacement vector considering periodic boundary conditions for any number of dimensions."""
     displacement = position - other_position
-    # Apply periodic boundary conditions
     for dim in range(len(position)):
         if displacement[dim] > box_vectors[dim] / 2:
             displacement[dim] -= box_vectors[dim]
@@ -13,21 +14,23 @@ def get_displacement_vector(position: np.ndarray, other_position: np.ndarray, bo
             displacement[dim] += box_vectors[dim]
     return displacement
 
+
 def test_get_displacement_vector():
     position = np.array([0.0, 0.0, 0.0])
     other_position = np.array([0.5, 0.5, 0.5])
     box_vectors = np.array([2.0, 2.0, 2.0])
     displacement = get_displacement_vector(position, other_position, box_vectors)
     assert np.allclose(displacement, np.array([-0.5, -0.5, -0.5]))
-    return True
+
 
 @numba.njit
 def get_distance(position: np.ndarray, other_position: np.ndarray, box_vectors: np.ndarray) -> float:
-    displacement = get_displacement_vector(position, other_position, box_vectors)
-    distances = np.zeros(shape=(len(position),), dtype=np.float64)
+    displacement: np.ndarray = get_displacement_vector(position, other_position, box_vectors)
+    distances: float = np.zeros(shape=(len(position),), dtype=np.float64)
     for dim in range(len(position)):
         distances[dim] = displacement[dim] ** 2
     return np.sqrt(np.sum(distances))
+
 
 def test_get_distance():
     position = np.array([0.0, 0.0, 0.0])
@@ -35,7 +38,7 @@ def test_get_distance():
     box_vectors = np.array([2.0, 2.0, 2.0])
     distance = get_distance(position, other_position, box_vectors)
     assert distance == np.sqrt(3) / 2
-    return True
+
 
 def generate_positions(unit_cell_coordinates: np.ndarray,
                        cells: np.ndarray,
@@ -63,7 +66,7 @@ def test_generate_positions_simple_cubic_in_space():
     assert np.allclose(positions[-5:],
                        np.array([[4, 4, 0], [4, 4, 1], [4, 4, 2], [4, 4, 3], [4, 4, 4]], dtype=np.float64))
     assert positions.shape == (125, 3)
-    return True
+
 
 def test_generate_positions_simple_cubic_in_plane():
     unit_cell_coordinates = np.array([[0, 0]], dtype=np.float64)
@@ -75,7 +78,7 @@ def test_generate_positions_simple_cubic_in_plane():
     assert np.allclose(positions[-5:],
                        np.array([[4, 0], [4, 1], [4, 2], [4, 3], [4, 4]], dtype=np.float64))
     assert positions.shape == (25, 2)
-    return True
+
 
 def test_generate_positions_body_centered_cubic():
     unit_cell_coordinates = np.array([[0, 0, 0], [0.5, 0.5, 0.5]], dtype=np.float64)
@@ -89,4 +92,3 @@ def test_generate_positions_body_centered_cubic():
                        np.array([[4.5, 4.5, 2.5], [4., 4., 3.], [4.5, 4.5, 3.5], [4., 4., 4.], [4.5, 4.5, 4.5]],
                                 dtype=np.float64))
     assert positions.shape == (250, 3)
-    return True

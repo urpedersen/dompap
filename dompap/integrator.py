@@ -2,6 +2,7 @@ import numpy as np
 import numba
 
 
+@numba.njit
 def _make_step(positions: np.ndarray,
                velocities: np.ndarray,
                betas: np.ndarray,
@@ -14,8 +15,12 @@ def _make_step(positions: np.ndarray,
     Reference: https://arxiv.org/1303.7011, Section II.C, Eqs. (16) and (17).
     """
     alphas = masses / temperature_damping_time
-    # Make random numbers with normal distribution and same shape as velocities
-    random_numbers = np.random.normal(size=velocities.shape)
+    # Make random numbers with normal distribution and same shape as velocities.
+    #     Initialize the random_numbers array with the same shape as velocities
+    random_numbers = np.empty_like(velocities)
+    for i in range(velocities.shape[0]):
+        for j in range(velocities.shape[1]):
+            random_numbers[i, j] = np.random.normal()
     beta_variance = 2 * alphas * temperature_target
     new_betas = np.sqrt(beta_variance) * random_numbers
     numerator = 2.0 * masses - alphas * time_step
