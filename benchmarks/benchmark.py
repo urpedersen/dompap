@@ -25,7 +25,7 @@ sim.run(steps_eq)
 toc = perf_counter()
 print(f'Time to equilibrate: {toc - tic:.2f} seconds')
 
-run_time = 0.1  # seconds
+run_time = 1.0  # seconds
 tic = perf_counter()
 steps_per_round = 1000
 rounds = 0
