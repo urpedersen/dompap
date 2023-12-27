@@ -280,10 +280,18 @@ class Simulation:
         """ Wrap all particles into box
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.positions[0] = [5.0, 0.0, 0.0]
+        >>> print(sim.box_vectors)
+        [5. 5. 5.]
+        >>> print(sim.image_positions[0])
+        [0 0 0]
+        >>> sim.positions[0] = [6.0, 0.0, 0.0]  # Shift particle 0 outside the box
+        >>> print(sim.positions[0])
+        [6. 0. 0.]
         >>> sim.wrap_into_box()
         >>> print(sim.positions[0])
-        [0. 0. 0.]
+        [1. 0. 0.]
+        >>> print(sim.image_positions[0])
+        [1 0 0]
         """
         from .positions import wrap_into_box
         wrap_into_box(self.positions, self.image_positions, self.box_vectors)
@@ -397,6 +405,19 @@ class Simulation:
         m_v2 = m * v_squared
         return 0.5 * np.sum(m_v2)
 
+    def get_diameters(self) -> np.ndarray:
+        """ Get diameters of particles
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.get_diameters()[:3])
+        [[1.]
+         [1.]
+         [1.]]
+        """
+        diameters = np.ones(shape=(self.number_of_particles(), 1), dtype=np.float64)
+        for n in range(self.number_of_particles()):
+            diameters[n] = self.sigma_func(n, n)
+        return diameters
 
 def test_simulation():
     sim = Simulation()
