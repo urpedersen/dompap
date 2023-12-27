@@ -138,3 +138,29 @@ def test_compute_radial_distribution_function():
     r = rdf[0]
     g_r = rdf[1]
     # assert np.allclose(rdf, 1.0, atol=0.3)
+
+
+def wrap_into_box(positions: np.ndarray, image_positions: np.ndarray, box_vectors: np.ndarray):
+    """ Wrap positions into box """
+    shift: np.ndarray = np.floor(positions / box_vectors[np.newaxis, :], dtype=np.float64)
+    image_positions += shift.astype(np.int32)
+    positions -= shift * box_vectors[np.newaxis, :]
+
+
+
+def test_wrap_into_box():
+    positions = np.array([
+        [0.1, 0.1, 0.1],
+        [2.5, 2.5, 2.5],
+        [-0.1, -0.1, -0.1]], dtype=np.float64)
+    image_positions = np.zeros_like(positions)
+    box_vectors = np.array([2.0, 2.0, 2.0], dtype=np.float64)
+    wrap_into_box(positions, image_positions, box_vectors)
+    assert np.allclose(positions, np.array([
+        [0.1, 0.1, 0.1],
+        [0.5, 0.5, 0.5],
+        [1.9, 1.9, 1.9]], dtype=np.float64))
+    assert np.allclose(image_positions, np.array([
+        [0, 0, 0],
+        [1, 1, 1],
+        [-1, -1, -1]], dtype=np.float64))

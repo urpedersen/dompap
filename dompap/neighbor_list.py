@@ -4,23 +4,24 @@ import numpy as np
 from .positions import get_distance, get_displacement_vector
 
 
-@numba.njit
+@numba.njit(parallel=True)
 def get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors) -> np.ndarray:
     """ Get neighbour list using a N^2 loop (backend) """
     number_of_particles: int = positions.shape[0]
 
     neighbor_list = np.zeros(shape=(number_of_particles, max_number_of_neighbors), dtype=np.int32) - 1  # -1 is empty
-    for n, position in enumerate(positions):
+    for n in numba.prange(number_of_particles):
+        position = positions[n]
         current_idx = 0
-        for m, other_position in enumerate(positions):
+        for m in range(number_of_particles):
             if n == m:
                 continue
+            other_position = positions[m]
             distance = get_distance(position, other_position, box_vectors)
             if distance < cutoff_distance:
                 neighbor_list[n][current_idx] = m
                 current_idx += 1
     return neighbor_list
-
 
 @numba.njit
 def neighbor_list_is_old(positions: np.ndarray,

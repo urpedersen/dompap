@@ -7,6 +7,10 @@ DEFAULT_SPATIAL_DIMENSION = 3
 DEFAULT_NUMBER_OF_PARTICLES = 125  # 5x5x5 simple cubic lattice
 
 
+def default_particle_types():
+    return np.zeros(shape=(DEFAULT_NUMBER_OF_PARTICLES, 1), dtype=np.int32)
+
+
 def default_positions():
     """ Setup 5x5x5 simple cubic lattice """
     positions = np.zeros(shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.float64)
@@ -46,6 +50,7 @@ def default_func_n_m():
 def default_func_r():
     return lambda r: np.float64(0.0)
 
+
 @dataclass
 class Simulation:
     """ Simulation class. The default simulation is a 5x5x5 simple cubic lattice of particles with unit mass, diameter
@@ -71,6 +76,7 @@ class Simulation:
         masses: [[1.]] ... [[1.]]
     """
     # System properties
+    particle_types: np.ndarray = field(default_factory=default_particle_types)
     positions: np.ndarray = field(default_factory=default_positions)
     box_vectors: np.ndarray = field(default_factory=default_box_vectors)
     image_positions: np.ndarray = field(default_factory=default_image_positions)
@@ -88,10 +94,11 @@ class Simulation:
 
     # Neighbor list parameters
     pair_potential_r_cut: np.float64 = np.float64(1.0)
-    neighbor_list_skin: np.float64 = np.float64(0.5)
-    max_number_of_neighbors: np.float64 = np.int32(128)
+    neighbor_list_skin: np.float64 = np.float64(2.0)
+    max_number_of_neighbors: np.float64 = np.int32(512)
 
     # Simulation parameters
+    number_of_steps: int = 0
     time_step: np.float64 = np.float64(0.01)
     temperature_target: np.float64 = np.float64(1.0)
     temperature_damping_time: np.float64 = np.float64(0.1)
@@ -171,7 +178,7 @@ class Simulation:
         >>> sim.set_neighbor_list()
         >>> max_number_of_neighbours = np.max(get_number_of_neighbors(sim.neighbor_list))
         >>> print(f'Max number of neighbours: {max_number_of_neighbours}')
-        Max number of neighbours: 18
+        Max number of neighbours: 92
         """
         from .neighbor_list import get_neighbor_list
         if skin is not None:
@@ -258,7 +265,7 @@ class Simulation:
         """ Get forces on all particles
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.positions[0] = [0.5, 0.0, 0.0]
+        >>> sim.positions[0] = [0.5, 0.0, 0.0]  # Shift particle 0 so that the force is not zero
         >>> forces = sim.get_forces()
         >>> print(f'Force on particle 0: F_x={forces[0, 0]}, F_y={forces[0, 1]}, F_z={forces[0, 2]}')
         Force on particle 0: F_x=-1.0, F_y=0.0, F_z=0.0
@@ -268,6 +275,18 @@ class Simulation:
         forces = _get_forces(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
                              self.sigma_func, self.epsilon_func)
         return forces
+
+    def wrap_into_box(self):
+        """ Wrap all particles into box
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.positions[0] = [5.0, 0.0, 0.0]
+        >>> sim.wrap_into_box()
+        >>> print(sim.positions[0])
+        [0. 0. 0.]
+        """
+        from .positions import wrap_into_box
+        wrap_into_box(self.positions, self.image_positions, self.box_vectors)
 
     def step(self):
         """ Make one step in the simulation
@@ -282,6 +301,8 @@ class Simulation:
         parameters = self.time_step, self.temperature_target, self.temperature_damping_time
         new_state = make_one_step(*old_state, forces, self.masses, *parameters)
         self.positions, self.velocities, self.betas = new_state
+        self.wrap_into_box()
+        self.number_of_steps += 1
 
     def run(self, steps: int = 1000):
         """ Run simulation
@@ -371,7 +392,7 @@ class Simulation:
         >>> sim = Simulation()
         >>> E_kin = sim.get_kinetic_energy()
         """
-        v_squared = np.sum(self.velocities**2, axis=1)
+        v_squared = np.sum(self.velocities ** 2, axis=1)
         m = self.masses[:, 0]
         m_v2 = m * v_squared
         return 0.5 * np.sum(m_v2)
@@ -383,6 +404,7 @@ def test_simulation():
     for i in range(steps):
         sim.step()
     assert sim.get_potential_energy() > 0.0
+
 
 if __name__ == '__main__':
     test_simulation()
