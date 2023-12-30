@@ -28,10 +28,10 @@ def make_one_step(positions: np.ndarray,
     """
     alphas = masses / temperature_damping_time
     random_numbers = np.random.normal(0, 1, velocities.shape)
-    beta_variance = 2 * alphas * temperature_target
+    beta_variance = 2 * alphas * temperature_target * time_step
     new_betas = np.sqrt(beta_variance) * random_numbers
-    numerator = 1.0 - alphas * time_step / 2.0
-    denominator = 1.0 + alphas * time_step / 2.0
+    numerator = 1.0 - alphas * time_step / 2.0 / masses
+    denominator = 1.0 + alphas * time_step / 2.0 / masses
     a = numerator / denominator
     b = 1 / denominator
     velocities = a * velocities + b * time_step * forces / masses + b * (betas + new_betas) / 2 / masses
