@@ -29,6 +29,7 @@ def test_make_pair_potential():
     assert pair_potential(0.5) == 0.25
     assert pair_force(0.5) == 1.0
 
+
 @numba.njit
 def _get_total_energy(positions: np.ndarray,
                       box_vectors: np.ndarray,
@@ -86,11 +87,11 @@ def _get_forces(positions: np.ndarray,
             if m == -1:
                 break
             position_m = positions[m]
-            distance = get_distance(positions_n, position_m, box_vectors)
+            displacement = get_displacement_vector(positions_n, position_m, box_vectors)
+            distance = np.sum(displacement ** 2) ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma).astype(np.float64)
-            displacement = get_displacement_vector(positions_n, position_m, box_vectors)
             unit_vector = displacement / distance
             forces[n] = forces[n] + scalar_force * unit_vector
     return forces
@@ -105,3 +106,32 @@ def test_get_forces():
     epsilon_func = numba.njit(lambda n, m: np.float64(4))
     forces = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
     assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
+
+
+def _get_virial(positions: np.ndarray,
+                box_vectors: np.ndarray,
+                pair_force: callable,
+                neighbor_list: np.ndarray,
+                sigma_func: callable,
+                epsilon_func: callable) -> float:
+    r""" Get virial of the system using $W = 1/d \sum_{i=1}^N \vec{r}_{i} \cdot \vec{F}_{i}$ """
+    dimension_of_space = positions.shape[1]
+    forces = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
+    virial = np.sum(forces * positions) / dimension_of_space
+    return virial
+
+
+def test_get_virial():
+    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
+    box_vectors = np.array([3, 3, 3], dtype=np.float64)
+    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+    neighbor_list = np.array([[1, -1, -1], [0, -1, -1]], dtype=np.int32)
+    sigma_func = numba.njit(lambda n, m: np.float64(2))
+    epsilon_func = numba.njit(lambda n, m: np.float64(4))
+    virial = _get_virial(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
+    assert virial == 4 / 3
+
+    # Test that we get the same virial if all positions are shifted by 1
+    positions = positions + 1
+    virial = _get_virial(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
+    assert virial == 4 / 3

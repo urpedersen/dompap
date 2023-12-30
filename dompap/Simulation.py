@@ -365,6 +365,15 @@ class Simulation:
         scale_factor = (current_density / density) ** (1 / dimensions)
         self.scale_box(scale_factor)
 
+    def get_dimensions_of_space(self) -> int:
+        """ Get dimensions of space
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.get_dimensions_of_space())
+        3
+        """
+        return self.box_vectors.shape[0]
+
     def get_temperature(self):
         """ Get temperature of the system
         >>> from dompap import Simulation
@@ -374,7 +383,7 @@ class Simulation:
         """
         m = self.masses[:, 0]
         v = self.velocities
-        dimensions_of_space = self.box_vectors.shape[0]
+        dimensions_of_space = self.get_dimensions_of_space()
         number_of_particles = self.number_of_particles()
         v_squared = np.sum(v ** 2, axis=1)
         temperature = np.sum(m * v_squared) / (dimensions_of_space * number_of_particles)
@@ -418,6 +427,33 @@ class Simulation:
         for n in range(self.number_of_particles()):
             diameters[n] = self.sigma_func(n, n)
         return diameters
+
+    def get_time(self):
+        """ Get time of the simulation
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> for _ in range(10):
+        ...     sim.step()
+        >>> print(sim.get_time())
+        0.1
+        """
+        return self.number_of_steps * self.time_step
+
+    def get_virial(self) -> float:
+        from .potential import _get_virial
+        virial = _get_virial(self.positions, self.box_vectors, self.pair_potential, self.neighbor_list,
+                             self.sigma_func, self.epsilon_func)
+        return float(virial)
+
+    def get_volume(self):
+        """ Get volume of the system
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.get_volume())
+        125.0
+        """
+        return np.prod(self.box_vectors)
+
 
 def test_simulation():
     sim = Simulation()
