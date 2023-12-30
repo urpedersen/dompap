@@ -36,14 +36,14 @@ def to_lammps_dump(sim: Simulation) -> str:
             out += f'{velocities[n, 0]} {velocities[n, 1]} '
             out += f'{forces[n, 0]} {forces[n, 1]}\n'
     if dimension_of_space == 3:
-        out += 'ITEM: ATOMS id type diameter mass x y z ix iy iz vx vy vz fx fy fz\n'
+        out += 'ITEM: ATOMS id type diameter mass x y z ix iy iz vx vy vz fx fy fz'
         index: int = 0
         for n in range(number_of_atoms):
-            out += f'{index} {int(particle_types[n])} {float(diameters[n])} {float(masses[n])} '
+            out += f'\n{index} {int(particle_types[n])} {float(diameters[n])} {float(masses[n])} '
             out += f'{positions[n, 0]} {positions[n, 1]} {positions[n, 2]} '
             out += f'{int(image_positions[n, 0])} {int(image_positions[n, 1])} {int(image_positions[n, 2])} '
             out += f'{velocities[n, 0]} {velocities[n, 1]} {velocities[n, 2]} '
-            out += f'{forces[n, 0]} {forces[n, 1]} {forces[n, 2]}\n'
+            out += f'{forces[n, 0]} {forces[n, 1]} {forces[n, 2]}'
             index += 1
     return out
 
@@ -70,5 +70,4 @@ ITEM: BOX BOUNDS pp pp pp
 0.0 5.0
 ITEM: ATOMS id type diameter mass x y z ix iy iz vx vy vz fx fy fz
 0 0 1.0 1.0 0.0 0.0 0.0 0 0 0 0.0 0.0 0.0 -1.0 0.0 0.0
-1 0 1.0 2.0 0.5 0.0 0.0 1 0 0 0.0 0.0 0.0 1.0 0.0 0.0
-"""
+1 0 1.0 2.0 0.5 0.0 0.0 1 0 0 0.0 0.0 0.0 1.0 0.0 0.0"""
