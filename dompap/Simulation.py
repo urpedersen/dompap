@@ -67,8 +67,8 @@ class Simulation:
     >>> sim.set_masses(masses=1.0)
     >>> sim.set_random_velocities(temperature=1.0)
     >>> sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    >>> sim.set_neighbor_list(skin=0.5, max_number_of_neighbors=128)
-    >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
+    >>> sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=128)
+    >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=1.0)
     >>> print(sim)
     Simulation:
         positions: [[0. 0. 0.]] ... [[4. 4. 4.]]
@@ -81,6 +81,7 @@ class Simulation:
     box_vectors: np.ndarray = field(default_factory=default_box_vectors)
     image_positions: np.ndarray = field(default_factory=default_image_positions)
     velocities: np.ndarray = field(default_factory=default_velocities)
+    _old_velocities: np.ndarray = None
     betas: np.ndarray = field(default_factory=default_betas)
 
     # Neighbor list properties
