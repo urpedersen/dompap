@@ -7,8 +7,9 @@ def print_progress(current_step, total_num_steps, this_stride, finalize=False):
         return
     if current_step % (this_stride * 50) == 0:
         if current_step > 0:
-            print(f'| ', end='')
-        print(f'\n{datetime.now()} {current_step:16,} ', end='')
+            print(f'|\n{datetime.now()} {current_step:12,} ', end='')
+        else:
+            print(f'{datetime.now()} {current_step:12,} ', end='')
     if current_step % (this_stride * 10) == 0:
         print('|', end='')
     elif current_step % this_stride == 0:

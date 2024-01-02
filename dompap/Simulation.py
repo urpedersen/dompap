@@ -212,6 +212,8 @@ class Simulation:
         """ Set pair potential.py and force
         >>> from dompap import Simulation
         >>> sim = Simulation()
+        >>> sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+        >>> sim.set_pair_potential_parameters(sigma=2.0, epsilon=4.0)
         >>> print(sim.pair_potential(0.5))
         0.25
         """
@@ -232,6 +234,7 @@ class Simulation:
         """
         self.sigma_func = numba.njit(lambda n, m: np.float64(sigma))
         self.epsilon_func = numba.njit(lambda n, m: np.float64(epsilon))
+        self.set_neighbor_list()
 
     def scale_box(self, scale_factor: float):
         """ Scale box vectors and positions
@@ -407,12 +410,13 @@ class Simulation:
         """ Get kinetic energy of the system
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> E_kin = sim.get_kinetic_energy()
+        >>> sim.velocities = np.ones_like(sim.velocities)  # Set all velocities to 1
+        >>> print(f'Kinetic energy: {sim.get_kinetic_energy():.1f}')
+        Kinetic energy: 187.5
         """
-        v_squared = np.sum(self.velocities ** 2, axis=1)
-        m = self.masses[:, 0]
-        m_v2 = m * v_squared
-        return 0.5 * np.sum(m_v2)
+        v = self.velocities
+        m = self.masses
+        return 0.5 * np.sum(m*v*v)
 
     def get_diameters(self) -> np.ndarray:
         """ Get diameters of particles
@@ -432,6 +436,7 @@ class Simulation:
         """ Get time of the simulation
         >>> from dompap import Simulation
         >>> sim = Simulation()
+        >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
         >>> for _ in range(10):
         ...     sim.step()
         >>> print(sim.get_time())
@@ -440,10 +445,28 @@ class Simulation:
         return self.number_of_steps * self.time_step
 
     def get_virial(self) -> float:
-        from .potential import _get_virial
-        virial = _get_virial(self.positions, self.box_vectors, self.pair_potential, self.neighbor_list,
-                             self.sigma_func, self.epsilon_func)
-        return float(virial)
+        D = self.get_dimensions_of_space()
+        r = self.positions
+        F = self.get_forces()
+        W = np.sum(F * r) / D
+        return W
+
+    def get_pressure(self) -> float:
+        """ Get pressure of the system
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.set_random_velocities(temperature=0.0)
+        >>> print(sim.get_pressure())
+        0.0
+        """
+        V = self.get_volume()
+        W = self.get_virial()
+        P_c = W / V
+        D = self.get_dimensions_of_space()
+        v = self.velocities
+        m = self.masses
+        P_id = np.sum(v*v*m) / D / V
+        return P_c + P_id
 
     def get_volume(self):
         """ Get volume of the system
@@ -453,6 +476,18 @@ class Simulation:
         125.0
         """
         return np.prod(self.box_vectors)
+
+    def set_particle_types(self, types):
+        """ Set particle types
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.set_particle_types(types=1)
+        >>> print(sim.particle_types[:3])
+        [[1]
+         [1]
+         [1]]
+        """
+        self.particle_types = np.ones_like(self.masses, dtype=np.int32) * types
 
 
 def test_simulation():

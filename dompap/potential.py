@@ -106,32 +106,3 @@ def test_get_forces():
     epsilon_func = numba.njit(lambda n, m: np.float64(4))
     forces = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
     assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
-
-
-def _get_virial(positions: np.ndarray,
-                box_vectors: np.ndarray,
-                pair_force: callable,
-                neighbor_list: np.ndarray,
-                sigma_func: callable,
-                epsilon_func: callable) -> float:
-    r""" Get virial of the system using $W = 1/d \sum_{i=1}^N \vec{r}_{i} \cdot \vec{F}_{i}$ """
-    dimension_of_space = positions.shape[1]
-    forces = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
-    virial = np.sum(forces * positions) / dimension_of_space
-    return virial
-
-
-def test_get_virial():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    neighbor_list = np.array([[1, -1, -1], [0, -1, -1]], dtype=np.int32)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    virial = _get_virial(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
-    assert virial == 4 / 3
-
-    # Test that we get the same virial if all positions are shifted by 1
-    positions = positions + 1
-    virial = _get_virial(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
-    assert virial == 4 / 3
