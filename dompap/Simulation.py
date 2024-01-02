@@ -81,7 +81,6 @@ class Simulation:
     box_vectors: np.ndarray = field(default_factory=default_box_vectors)
     image_positions: np.ndarray = field(default_factory=default_image_positions)
     velocities: np.ndarray = field(default_factory=default_velocities)
-    _old_velocities: np.ndarray = None
     betas: np.ndarray = field(default_factory=default_betas)
 
     # Neighbor list properties
@@ -123,6 +122,29 @@ class Simulation:
     positions: {self.positions[:1]} ... {self.positions[-1:]}
     box_vectors: {self.box_vectors}
     masses: {self.masses[:1]} ... {self.masses[-1:]}"""
+
+    def copy(self):
+        """ Make a deep copy of the simulation
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.positions[:3])
+        [[0. 0. 0.]
+         [0. 0. 1.]
+         [0. 0. 2.]]
+        >>> sim_copy = sim.copy()
+        >>> sim_copy.positions[0] = [1.0, 0.0, 0.0]
+        >>> print(sim.positions[:3])
+        [[0. 0. 0.]
+         [0. 0. 1.]
+         [0. 0. 2.]]
+        >>> print(sim_copy.positions[:3])
+        [[1. 0. 0.]
+         [0. 0. 1.]
+         [0. 0. 2.]]
+        """
+        from copy import deepcopy
+        return deepcopy(self)
 
     def set_positions(self, unit_cell_coordinates: tuple = ([0.0, 0.0, 0.0],), cells: tuple = (5, 5, 5),
                       lattice_constants: tuple = (1.0, 1.0, 1.0)):
@@ -489,6 +511,7 @@ class Simulation:
          [1]]
         """
         self.particle_types = np.ones_like(self.masses, dtype=np.int32) * types
+
 
 
 def test_simulation():
