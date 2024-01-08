@@ -1,7 +1,8 @@
-import numpy as np
-import numba
-
 from dataclasses import dataclass, field
+
+import numba
+import numpy as np
+
 
 DEFAULT_SPATIAL_DIMENSION = 3
 DEFAULT_NUMBER_OF_PARTICLES = 125  # 5x5x5 simple cubic lattice
@@ -89,10 +90,9 @@ class Simulation:
 
     # Particle properties
     masses: np.ndarray = field(default_factory=default_masses)
-    # sigmas: np.ndarray = field(default_factory=default_diameters)
-    # epsilons: np.ndarray = field(default_factory=default_epsilons)
 
     # Neighbor list parameters
+    force_method_str = 'neighbor list'
     pair_potential_r_cut: np.float64 = np.float64(1.0)
     neighbor_list_skin: np.float64 = np.float64(2.0)
     max_number_of_neighbors: np.float64 = np.int32(512)
@@ -306,11 +306,29 @@ class Simulation:
         >>> print(f'Force on particle 0: F_x={forces[0, 0]}, F_y={forces[0, 1]}, F_z={forces[0, 2]}')
         Force on particle 0: F_x=-1.0, F_y=0.0, F_z=0.0
         """
-        from .potential import _get_forces
-        self.update_neighbor_list()
-        forces = _get_forces(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
+        if self.force_method_str == 'neighbor list':
+            from .potential import _get_forces
+            self.update_neighbor_list()
+            forces = _get_forces(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
                              self.sigma_func, self.epsilon_func)
-        return forces
+            return forces
+        elif self.force_method_str == 'double loop':
+            from .potential import _get_forces_double_loop
+            forces = _get_forces_double_loop(self.positions, self.box_vectors, self.pair_force,
+                                             self.sigma_func, self.epsilon_func)
+            return forces
+        elif self.force_method_str == 'double loop single core':
+            from .potential import _get_forces_double_loop_single_core
+            forces = _get_forces_double_loop_single_core(self.positions, self.box_vectors, self.pair_force,
+                                                         self.sigma_func, self.epsilon_func)
+            return forces
+        elif self.force_method_str == 'vectorized':
+            from .potential import _get_forces_vectorized
+            forces = _get_forces_vectorized(self.positions, self.box_vectors, self.pair_force,
+                                            self.sigma_func, self.epsilon_func)
+            return forces
+        else:
+            raise ValueError(f'Unknown force method: {self.force_method_str}')
 
     def wrap_into_box(self):
         """ Wrap all particles into box

@@ -55,7 +55,7 @@ def test_make_pair_potential():
     assert pair_force(0.5) == 1.0
 
 
-def test_hardcoded_potentials(verbose=True, plot=True):
+def test_hardcoded_potentials(verbose=False, plot=False):
     """  Loop over all hardcoded potentials, plot them, and test that they are equal to make_pair_potential(...) """
     for name, (pair_potential_str, pair_potential, pair_force, r_cut) in hardcoded_pair_potentials.items():
         if verbose:
@@ -63,7 +63,7 @@ def test_hardcoded_potentials(verbose=True, plot=True):
         # Test that hardcoded potential is equal to make_pair_potential(...)
         pair_potential_test, pair_force_test = make_pair_potential(pair_potential_str, r_cut)
 
-        r = np.linspace(0, r_cut*1.2, 1000)
+        r = np.linspace(0, r_cut * 1.2, 1000)
 
         # Plot potential
         if plot:
@@ -162,4 +162,124 @@ def test_get_forces():
     sigma_func = numba.njit(lambda n, m: np.float64(2))
     epsilon_func = numba.njit(lambda n, m: np.float64(4))
     forces = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
+    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
+
+
+@numba.njit
+def _get_forces_double_loop_single_core(positions: np.ndarray,
+                                        box_vectors: np.ndarray,
+                                        pair_force: callable,
+                                        sigma_func: callable,
+                                        epsilon_func: callable) -> np.ndarray:
+    """ Get forces on all particles using double loop """
+    forces = np.zeros(shape=positions.shape, dtype=np.float64)
+    number_of_particles = positions.shape[0]
+    for n in range(number_of_particles - 1):
+        for m in range(n + 1, number_of_particles):
+            displacement = get_displacement_vector(positions[n], positions[m], box_vectors)
+            distance = np.sum(displacement ** 2) ** 0.5
+            sigma = sigma_func(n, m)
+            epsilon = epsilon_func(n, m)
+            scalar_force = epsilon * pair_force(distance / sigma)
+            unit_vector = displacement / distance
+            forces[n] = forces[n] + scalar_force * unit_vector
+            forces[m] = forces[m] - scalar_force * unit_vector
+    return forces
+
+
+def test_get_forces_double_loop_single_core():
+    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
+    box_vectors = np.array([3, 3, 3], dtype=np.float64)
+    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+    sigma_func = numba.njit(lambda n, m: np.float64(2))
+    epsilon_func = numba.njit(lambda n, m: np.float64(4))
+    forces = _get_forces_double_loop_single_core(positions, box_vectors, pair_force, sigma_func, epsilon_func)
+    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
+
+
+@numba.njit(parallel=True)
+def _get_forces_double_loop(positions: np.ndarray,
+                            box_vectors: np.ndarray,
+                            pair_force: callable,
+                            sigma_func: callable,
+                            epsilon_func: callable) -> np.ndarray:
+    """ Get forces on all particles using double loop """
+    forces = np.zeros(shape=positions.shape, dtype=np.float64)
+    number_of_particles = positions.shape[0]
+    for n in numba.prange(number_of_particles):
+        for m in range(number_of_particles):
+            if m == n:
+                continue
+            displacement = positions[n] - positions[m]
+            # Periodic boundary conditions
+            dimension_of_space = positions.shape[1]
+            distance: np.float64 = np.float64(0.0)
+            for d in range(dimension_of_space):
+                if displacement[d] > box_vectors[d] / 2:
+                    displacement[d] -= box_vectors[d]
+                elif displacement[d] < -box_vectors[d] / 2:
+                    displacement[d] += box_vectors[d]
+                distance += displacement[d] ** 2
+            distance = distance ** 0.5
+            sigma = sigma_func(n, m)
+            epsilon = epsilon_func(n, m)
+            scalar_force = epsilon * pair_force(distance / sigma)
+            unit_vector = displacement / distance
+            forces[n] = forces[n] + scalar_force * unit_vector
+    return forces
+
+
+def test_get_forces_double_loop():
+    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
+    box_vectors = np.array([3, 3, 3], dtype=np.float64)
+    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+    sigma_func = numba.njit(lambda n, m: np.float64(2))
+    epsilon_func = numba.njit(lambda n, m: np.float64(4))
+    forces = _get_forces_double_loop(positions, box_vectors, pair_force, sigma_func, epsilon_func)
+    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
+
+
+def _get_forces_vectorized(positions: np.ndarray,
+                           box_vectors: np.ndarray,
+                           pair_force: callable,
+                           sigma_func: callable,
+                           epsilon_func: callable) -> np.ndarray:
+    """ Get forces on all particles using vectorized operations """
+    num_particles = positions.shape[0]
+
+    # Calculate pairwise displacements
+    disp_vec = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+
+    # Apply periodic boundary conditions
+    for i in range(disp_vec.shape[-1]):
+        box_length = box_vectors[i]
+        disp_vec[..., i] -= box_length * np.rint(disp_vec[..., i] / box_length)
+
+    # Compute distances and avoid division by zero
+    distances = np.sqrt(np.sum(disp_vec ** 2, axis=2))
+    np.fill_diagonal(distances, 1)
+
+    # Compute pairwise sigma and epsilon
+    sigma_matrix = sigma_func(*np.indices((num_particles, num_particles)))
+    epsilon_matrix = epsilon_func(*np.indices((num_particles, num_particles)))
+
+    # Calculate scalar forces for all pairs
+    scalar_force_matrix = epsilon_matrix * pair_force(distances / sigma_matrix)
+
+    # Normalize displacement vectors and multiply by scalar forces
+    unit_vector_matrix = disp_vec / distances[..., np.newaxis]
+    force_matrix = scalar_force_matrix[..., np.newaxis] * unit_vector_matrix
+
+    # Aggregate forces
+    forces = np.sum(force_matrix, axis=1)
+
+    return forces
+
+def test_get_forces_vectorized():
+    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
+    box_vectors = np.array([3, 3, 3], dtype=np.float64)
+    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+    sigma_func = lambda n, m: np.float64(2)
+    epsilon_func = lambda n, m: np.float64(4)
+    forces = _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func)
     assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
