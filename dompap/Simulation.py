@@ -240,14 +240,24 @@ class Simulation:
         >>> print(sim.pair_potential(0.5))
         0.25
         """
+        from .potential import hardcoded_pair_potentials
+        if pair_potential_str in hardcoded_pair_potentials:
+            self.pair_potential_str = hardcoded_pair_potentials[pair_potential_str][0]
+            self.pair_potential = hardcoded_pair_potentials[pair_potential_str][1]
+            self.pair_force = hardcoded_pair_potentials[pair_potential_str][2]
+            self.pair_potential_r_cut = hardcoded_pair_potentials[pair_potential_str][3]
+            self.set_neighbor_list()
+            return
+
+        # If not hardcoded, make pair potential using SymPy
         from .potential import make_pair_potential
         self.pair_potential_str = pair_potential_str
-        self.set_neighbor_list()
         self.pair_potential_r_cut = np.float64(r_cut)
         self.pair_potential, self.pair_force = make_pair_potential(
             pair_potential_str=pair_potential_str,
             r_cut=r_cut
         )
+        self.set_neighbor_list()
 
     def set_pair_potential_parameters(self, sigma: float = 1.0, epsilon: float = 1.0):
         """ Set potential parameters

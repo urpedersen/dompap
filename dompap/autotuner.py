@@ -8,7 +8,7 @@ def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100,
     sim_copy = sim.copy()
     sim_copy.step()  # Run one step to initialize
 
-    skin_values = [0.3, 0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0]
+    skin_values = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
     times = []
     for skin in skin_values:
         sim_copy.set_neighbor_list(skin=skin, max_number_of_neighbors=max_number_of_neighbors)
@@ -19,9 +19,10 @@ def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100,
 
     # Print table with skin and time values
     if verbose:
+        print('Autotune results:')
         print(' Skin | Time  ')
         for skin, time in zip(skin_values, times):
-            print(f'{skin:4.1f} | {time:6.2f}')
+            print(f'{skin:4.1f} | {time:6.4f}')
 
     if plot:
         import matplotlib.pyplot as plt
@@ -32,6 +33,8 @@ def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100,
 
     # Find skin value with minimum time
     skin = skin_values[times.index(min(times))]
+    if verbose:
+        print(f'Optimal parameters: {skin=}')
     sim.set_neighbor_list(skin=skin, max_number_of_neighbors=max_number_of_neighbors)
     return sim
 

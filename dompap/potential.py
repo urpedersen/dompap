@@ -6,6 +6,31 @@ import sympy as sp
 from .positions import get_distance, get_displacement_vector
 
 
+@numba.njit
+def harmonic_repulsion_pot(r):
+    if r < 1:
+        return 0.5 * (1 - r) ** 2
+    else:
+        return 0.0
+
+
+@numba.njit
+def harmonic_repulsion_force(r):
+    if r < 1:
+        return 1 - r
+    else:
+        return 0.0
+
+
+hardcoded_pair_potentials = {
+    # Name: (pair_potential_str, energy, force, r_cut)
+    'Harmonic repulsive': ('0.5*(1-r)**2',
+                           harmonic_repulsion_pot,
+                           harmonic_repulsion_force,
+                           1.0)
+}
+
+
 def make_pair_potential(pair_potential_str='(((1-r)**2)**(1/2))**(7/2)', r_cut=1.0):
     """ Make pair potential function, and its derivative """
     r = sp.symbols('r')
@@ -28,6 +53,38 @@ def test_make_pair_potential():
     pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
     assert pair_potential(0.5) == 0.25
     assert pair_force(0.5) == 1.0
+
+
+def test_hardcoded_potentials(verbose=True, plot=True):
+    """  Loop over all hardcoded potentials, plot them, and test that they are equal to make_pair_potential(...) """
+    for name, (pair_potential_str, pair_potential, pair_force, r_cut) in hardcoded_pair_potentials.items():
+        if verbose:
+            print(f'Testing {name}...')
+        # Test that hardcoded potential is equal to make_pair_potential(...)
+        pair_potential_test, pair_force_test = make_pair_potential(pair_potential_str, r_cut)
+
+        r = np.linspace(0, r_cut*1.2, 1000)
+
+        # Plot potential
+        if plot:
+            plt.figure(figsize=(4, 6))
+            plt.title(name)
+            plt.subplot(2, 1, 1)
+            for x in r:
+                plt.plot(x, pair_potential(x), 'bo', fillstyle='none')
+                plt.plot(x, pair_potential_test(x), 'rx')
+            plt.xlabel('r')
+            plt.ylim(-1, 1.5)
+            plt.ylabel('Pair potential')
+            # Plot force
+            plt.subplot(2, 1, 2)
+            for x in r:
+                plt.plot(x, pair_force(x), 'bo', fillstyle='none')
+                plt.plot(x, pair_force_test(x), 'rx')
+            plt.xlabel('r')
+            plt.ylim(-1, 1.5)
+            plt.ylabel('Pair force')
+            plt.show()
 
 
 @numba.njit
@@ -91,7 +148,7 @@ def _get_forces(positions: np.ndarray,
             distance = np.sum(displacement ** 2) ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
-            scalar_force = epsilon * pair_force(distance / sigma).astype(np.float64)
+            scalar_force = epsilon * pair_force(distance / sigma)
             unit_vector = displacement / distance
             forces[n] = forces[n] + scalar_force * unit_vector
     return forces
