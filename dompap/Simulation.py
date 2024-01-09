@@ -92,6 +92,7 @@ class Simulation:
     masses: np.ndarray = field(default_factory=default_masses)
 
     # Neighbor list parameters
+    energy_method_str = 'neighbor list'
     force_method_str = 'neighbor list'
     pair_potential_r_cut: np.float64 = np.float64(1.0)
     neighbor_list_skin: np.float64 = np.float64(2.0)
@@ -291,11 +292,18 @@ class Simulation:
         >>> print(sim.get_potential_energy())
         167.06442443573454
         """
-        from .potential import _get_total_energy
-        self.update_neighbor_list()
-        energy = _get_total_energy(self.positions, self.box_vectors, self.pair_potential, self.neighbor_list,
-                                   self.sigma_func, self.epsilon_func)
-        return float(energy)
+
+        if self.energy_method_str == 'neighbor list':
+            from .potential import _get_total_energy
+            self.update_neighbor_list()
+            energy = _get_total_energy(self.positions, self.box_vectors, self.pair_potential, self.neighbor_list,
+                                       self.sigma_func, self.epsilon_func)
+            return float(energy)
+        elif self.energy_method_str == 'double loop':
+            from .potential import _get_total_energy_double_loop
+            energy = _get_total_energy_double_loop(self.positions, self.box_vectors, self.pair_potential,
+                                                   self.sigma_func, self.epsilon_func)
+            return float(energy)
 
     def get_forces(self) -> np.ndarray:
         """ Get forces on all particles

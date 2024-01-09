@@ -23,7 +23,7 @@ import pandas as pd
 
 from dompap import Simulation
 from dompap import print_progress
-
+import dompap
 def run_simulation(sim, target_temperature=0.8, verbose=False):
     sim.set_integrator(time_step=0.004, target_temperature=target_temperature, temperature_damping_time=0.1)
 
@@ -73,7 +73,7 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
         (0.5, 0.0, 0.5),
         (0.0, 0.5, 0.5)
     ], dtype=np.float64)
-    sim.set_positions(unit_cell_coordinates=fcc_unit_cell, cells=(8, 8, 8))
+    sim.set_positions(unit_cell_coordinates=fcc_unit_cell, cells=(6, 6, 6))
     specific_volume = 1.0277
     density = 1.0 / specific_volume
     if verbose:
@@ -85,7 +85,10 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
     sim.set_pair_potential(pair_potential_str='4*(r**-12-r**-6)', r_cut=2.5)
     sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
     sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=512)
-    sim.set_integrator(time_step=0.004, target_temperature=0.8, temperature_damping_time=10.0)
+    sim.set_integrator(time_step=0.004, target_temperature=0.8, temperature_damping_time=2.0)
+    sim.force_method_str = 'double loop'
+    sim.energy_method_str = 'double loop'
+    # sim = dompap.autotune(sim, verbose=verbose)
 
     if verbose:
         print(f'Equilibrate crystal')
@@ -128,6 +131,12 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
 
 
     if plot:
+        # Plot positions
+        plt.figure(figsize=(4, 4))
+        plt.plot(sim.positions[:, 0], sim.positions[:, 1], '.')
+        plt.axis('equal')
+        plt.show()
+
         # Virial versus potential energy
         plt.figure(figsize=(4, 4))
         x = df['potential_energy']
@@ -162,6 +171,7 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
         plt.xlabel('Time')
         plt.subplots_adjust(hspace=0)
         plt.show()
+
 
 
 
