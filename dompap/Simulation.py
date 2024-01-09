@@ -504,11 +504,11 @@ class Simulation:
         return self.number_of_steps * self.time_step
 
     def get_virial(self) -> float:
-        D = self.get_dimensions_of_space()
-        r = self.positions
-        F = self.get_forces()
-        W = np.sum(F * r) / D
-        return W
+        from .potential import _get_virial_double_loop
+        self.update_neighbor_list()
+        virial = _get_virial_double_loop(self.positions, self.box_vectors, self.pair_force,
+                                         self.sigma_func, self.epsilon_func)
+        return virial
 
     def get_pressure(self) -> float:
         """ Get pressure of the system

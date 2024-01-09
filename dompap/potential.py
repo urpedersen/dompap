@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numba
+import numpy
 import numpy as np
 import sympy as sp
 
@@ -316,3 +317,29 @@ def test_get_forces_vectorized():
     epsilon_func = lambda n, m: np.float64(4)
     forces = _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func)
     assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
+
+@numba.njit(parallel=True)
+def _get_virial_double_loop(positions: np.ndarray,
+                            box_vectors: np.ndarray,
+                            pair_force: callable,
+                            sigma_func: callable,
+                            epsilon_func: callable) -> np.float64:
+    """ Get (pair ) virial of the system using a double loop """
+    num_particles = positions.shape[0]
+    dimension_of_space = positions.shape[1]
+    virial: np.float64 = np.float64(0.0)
+    for n in numba.prange(num_particles-1):
+        for m in range(n + 1, num_particles):
+            displacement: np.float64 = positions[n] - positions[m]
+            # Periodic boundary conditions
+            for d in range(dimension_of_space):
+                if displacement[d] > box_vectors[d] / 2:
+                    displacement[d] -= box_vectors[d]
+                elif displacement[d] < -box_vectors[d] / 2:
+                    displacement[d] += box_vectors[d]
+            distance = np.sum(displacement ** 2) ** 0.5
+            sigma = sigma_func(n, m)
+            epsilon = epsilon_func(n, m)
+            scalar_force = epsilon * pair_force(distance / sigma)
+            virial += scalar_force * distance
+    return numpy.float64(virial/dimension_of_space)
