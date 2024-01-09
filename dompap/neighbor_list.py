@@ -21,10 +21,119 @@ def get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_nei
             if distance < cutoff_distance:
                 neighbor_list[n][current_idx] = m
                 current_idx += 1
-                #if current_idx >= max_number_of_neighbors:  May be expensive, so we don't check, user get malloc error
+                # if current_idx >= max_number_of_neighbors:  May be expensive, so we don't check, user get malloc error
                 #    raise ValueError(f'Number of neighbors for particle {n} '
                 #                     f'exceeds max_number_of_neighbors={max_number_of_neighbors}.')
     return neighbor_list
+
+
+def test_get_neighbor_list_3d():
+    # Test 3D example
+    positions = np.array([
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [2, 2, 2],
+        [5, 5, 0]], dtype=np.float64)
+    box_vectors = np.array([6, 6, 6], dtype=np.float64)
+    cutoff_distance = np.float64(1.5)
+    max_number_of_neighbors = 4
+    neighbor_list = get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    assert np.all(neighbor_list == np.array([
+        [1, 2, 3, 5],
+        [0, 2, 3, -1],
+        [0, 1, 3, -1],
+        [0, 1, 2, -1],
+        [-1, -1, -1, -1],
+        [0, -1, -1, -1]], dtype=np.int32))
+
+def test_get_neighbor_list_2d():
+    # Test 2D example
+    positions = np.array([
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [2, 2],
+        [5, 5]], dtype=np.float64)
+    box_vectors = np.array([6, 6], dtype=np.float64)
+    cutoff_distance = np.float64(1.5)
+    max_number_of_neighbors = 4
+    neighbor_list = get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    assert np.all(neighbor_list == np.array([
+        [1, 2, 4, -1],
+        [0, 2, -1, -1],
+        [0, 1, -1, -1],
+        [-1, -1, -1, -1],
+        [0, -1, -1, -1]], dtype=np.int32))
+
+def get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors) -> np.ndarray:
+    number_of_spatial_dimensions = positions.shape[1]
+    max_number_of_cell_neighbors = max_number_of_neighbors * 3 ** number_of_spatial_dimensions
+    # Find the number of cells in each direction
+    number_of_cells = np.ceil(box_vectors / cutoff_distance).astype(np.int32)
+    # Create a list of empty cells
+    cells = np.zeros(shape=(*tuple(number_of_cells), max_number_of_cell_neighbors), dtype=np.int32) - 1 # -1 is empty
+
+    # Loop particles and add them to the cells
+    number_of_particles = positions.shape[0]
+    for n in range(number_of_particles):
+        position = positions[n]
+        cell_idx = np.floor(position / cutoff_distance).astype(np.int32)
+        this_cell = cells[tuple(cell_idx)]
+        idx = np.sum(this_cell != -1)  # Index of the cell in the cells array
+        this_cell[idx] = n
+
+    # Loop particles and find neighbors
+    neighbor_list = np.zeros(shape=(number_of_particles, max_number_of_neighbors), dtype=np.int32) - 1  # -1 is empty
+    for n in range(number_of_particles):
+        next_avalible_idx = 0
+        position = positions[n]
+        cell_idx = np.floor(position / cutoff_distance).astype(np.int32)
+        number_of_spatial_dimensions = len(cell_idx)
+        # Loop over all cells in the neighborhood
+        for i in range(3 ** number_of_spatial_dimensions):
+            # Get the cell index of the neighbor cell
+            neighbor_cell_idx = cell_idx + np.unravel_index(i, (3,) * number_of_spatial_dimensions) - 1
+            # Apply periodic boundary conditions to cell idx
+            for d in range(number_of_spatial_dimensions):
+                if neighbor_cell_idx[d] < 0:
+                    neighbor_cell_idx[d] += number_of_cells[d]
+                elif neighbor_cell_idx[d] >= number_of_cells[d]:
+                    neighbor_cell_idx[d] -= number_of_cells[d]
+            # Loop particles in cell and add them to neighbor list
+            neighbor_cell = cells[tuple(neighbor_cell_idx)]
+            for m in range(max_number_of_cell_neighbors):
+                if neighbor_cell[m] == -1:
+                    break
+                other_position = positions[neighbor_cell[m]]
+                distance = get_distance(position, other_position, box_vectors)
+                if distance < cutoff_distance and neighbor_cell[m] != n:
+                    neighbor_list[n][next_avalible_idx] = neighbor_cell[m]
+                    next_avalible_idx += 1
+    return neighbor_list
+
+
+def test_get_neighbor_list_cell_list():
+    positions = np.array([
+        [0, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [2, 2, 2],
+        [5, 5, 0]], dtype=np.float64)
+    box_vectors = np.array([6, 6, 6], dtype=np.float64)
+    cutoff_distance = np.float64(1.5)
+    max_number_of_neighbors = 4
+    neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    assert np.all(neighbor_list == np.array([
+        [5, 1, 2, 3],
+        [0, 2, 3, -1],
+        [0, 1, 3, -1],
+        [0, 1, 2, -1],
+        [-1, -1, -1, -1],
+        [0, -1, -1, -1]], dtype=np.int32))
+
 
 @numba.njit
 def neighbor_list_is_old(positions: np.ndarray,
@@ -49,12 +158,13 @@ def test_neighbor_list_is_old():
     box_vectors = np.array([5, 5, 5], dtype=np.float64)
     skin = np.float64(0.5)
     assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == False
-    old_positions[0] = [skin/2 - 0.01, 0.0, 0.0]  # Particle 0 has moved less 0.01 larger half the skin
+    old_positions[0] = [skin / 2 - 0.01, 0.0, 0.0]  # Particle 0 has moved less 0.01 larger half the skin
     assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == False
-    old_positions[0] = [skin/2 + 0.01, 0.0, 0.0]  # Particle 0 has moved 0.01 larger half the skin
+    old_positions[0] = [skin / 2 + 0.01, 0.0, 0.0]  # Particle 0 has moved 0.01 larger half the skin
     assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == True
     old_positions[0] = [0.0 + box_vectors[0], 0.0, 0.0]  # Particle 0 has moved one box length to its own image
     assert neighbor_list_is_old(positions, old_positions, box_vectors, skin) == False
+
 
 def test_neighbor_list_is_old_skin_range():
     positions = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float64)
@@ -74,9 +184,11 @@ def get_number_of_neighbors(neighbor_list):
     """ Get number of neighbours for each particle """
     return np.sum(neighbor_list != -1, axis=1)
 
+
 def test_get_number_of_neighbors_all_minus_one():
     neighbor_list = np.array([[-1, -1, -1], [-1, -1, -1]], dtype=np.int32)
     assert np.all(get_number_of_neighbors(neighbor_list) == 0)  # No particles have neighbors
+
 
 def test_get_number_of_neighbors():
     neighbor_list = np.array([[1, 2, -1], [1, -1, -1]], dtype=np.int32)
