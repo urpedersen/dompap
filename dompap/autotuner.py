@@ -1,7 +1,7 @@
 from dompap import Simulation
 
 
-def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100,
+def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100, test_double_loop=True,
              verbose=False, plot=False) -> Simulation:
     from time import perf_counter
 
@@ -32,22 +32,24 @@ def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100,
     sim.set_neighbor_list(skin=skin, max_number_of_neighbors=max_number_of_neighbors)
 
     # Test double loop method for force
-    sim_copy = sim.copy()
-    sim_copy.force_method_str = 'double loop'
-    sim_copy.step()  # Run one step to initialize
-    tic = perf_counter()
-    sim_copy.run(steps)
-    toc = perf_counter()
-    time_double_loop = toc - tic
-    if verbose:
-        print(f'Time with double loop: {time_double_loop=:0.4f}')
-    if time_double_loop < fastest_time:
-        sim.force_method_str = 'double loop'
+    time_double_loop: float = None
+    if test_double_loop:
+        sim_copy = sim.copy()
+        sim_copy.force_method_str = 'double loop'
+        sim_copy.step()  # Run one step to initialize
+        tic = perf_counter()
+        sim_copy.run(steps)
+        toc = perf_counter()
+        time_double_loop = toc - tic
         if verbose:
-            print('Using double loop method for force calculations.')
-    else:
-        if verbose:
-            print('Using neighbour list method for force calculations.')
+            print(f'Time with double loop: {time_double_loop=:0.4f}')
+        if time_double_loop < fastest_time:
+            sim.force_method_str = 'double loop'
+            if verbose:
+                print('Using double loop method for force calculations.')
+        else:
+            if verbose:
+                print('Using neighbour list method for force calculations.')
 
     # Make plot
     if plot:
@@ -55,7 +57,8 @@ def autotune(sim: Simulation, skin=0.5, max_number_of_neighbors=512, steps=100,
         plt.plot(skin_values, times, 'o', label='Neighbour list')
         # Red for at fastest time
         plt.plot(skin, fastest_time, 'ro', label='Fastest time')
-        plt.plot(skin_values, [time_double_loop] * len(skin_values), '--', label='Double loop')
+        if test_double_loop:
+            plt.plot(skin_values, [time_double_loop] * len(skin_values), '--', label='Double loop')
         plt.xlabel('Skin')
         plt.ylabel('Time')
         plt.legend()
