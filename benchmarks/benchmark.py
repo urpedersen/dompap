@@ -5,7 +5,7 @@ from dompap import Simulation, autotune
 tic = perf_counter()
 
 sim = Simulation()
-sim.set_positions(unit_cell_coordinates=([0.0, 0.0, 0.0],), cells=(5, 5, 5), lattice_constants=(1.0, 1.0, 1.0))
+sim.set_positions(unit_cell_coordinates=([0.0, 0.0, 0.0],), cells=(10, 10, 10), lattice_constants=(1.0, 1.0, 1.0))
 sim.set_masses(masses=1.0)
 sim.set_random_velocities(temperature=1.0)
 sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
