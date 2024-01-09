@@ -21,6 +21,9 @@ def get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_nei
             if distance < cutoff_distance:
                 neighbor_list[n][current_idx] = m
                 current_idx += 1
+                #if current_idx >= max_number_of_neighbors:  May be expensive, so we don't check, user get malloc error
+                #    raise ValueError(f'Number of neighbors for particle {n} '
+                #                     f'exceeds max_number_of_neighbors={max_number_of_neighbors}.')
     return neighbor_list
 
 @numba.njit

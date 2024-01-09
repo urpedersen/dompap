@@ -224,6 +224,7 @@ class Simulation:
         self.neighbor_list = get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbours)
         self.positions_neighbour_list = self.positions.copy()
 
+
     def update_neighbor_list(self, check=True):
         """ Update neighbour list if needed """
         from .neighbor_list import neighbor_list_is_old

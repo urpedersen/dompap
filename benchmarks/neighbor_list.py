@@ -91,3 +91,4 @@ print(f'\nAverage time per step: {average_time * 1000:.3f} milliseconds')
 
 number_of_neighbors = np.sum(sim.neighbor_list != -1, axis=1)
 print(f'\n{max(number_of_neighbors)=}  {min(number_of_neighbors)=}  {np.mean(number_of_neighbors)=}')
+
