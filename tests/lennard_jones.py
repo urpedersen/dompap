@@ -16,14 +16,13 @@ Energy per particle: −4.075
 
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
+from dompap import Simulation, print_progress, autotune
 
-from dompap import Simulation
-from dompap import print_progress
-import dompap
+
 def run_simulation(sim, target_temperature=0.8, verbose=False):
     sim.set_integrator(time_step=0.004, target_temperature=target_temperature, temperature_damping_time=0.1)
 
@@ -41,10 +40,10 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
             N = sim.get_number_of_particles()
             thermodynamic_data.append(
                 [sim.get_time(),
-                 sim.get_potential_energy()/N,
+                 sim.get_potential_energy() / N,
                  sim.get_temperature(),
-                 sim.get_kinetic_energy()/N,
-                 sim.get_virial()/N,
+                 sim.get_kinetic_energy() / N,
+                 sim.get_virial() / N,
                  sim.get_pressure()])
         sim.step()
 
@@ -84,15 +83,15 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
     sim.set_random_velocities(temperature=0.8 * 2)
     sim.set_pair_potential(pair_potential_str='4*(r**-12-r**-6)', r_cut=2.5)
     sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
-    sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=512)
+    sim.set_neighbor_list(skin=1.2, max_number_of_neighbors=512)
     sim.set_integrator(time_step=0.004, target_temperature=0.8, temperature_damping_time=2.0)
-    sim.force_method_str = 'double loop'
-    sim.energy_method_str = 'double loop'
-    # sim = dompap.autotune(sim, verbose=verbose)
+    # sim.force_method_str = 'double loop'
+    # sim.energy_method_str = 'double loop'
+    # sim = autotune(sim, verbose=verbose)
 
     if verbose:
         print(f'Equilibrate crystal')
-    sim, _ = run_simulation(sim, verbose=verbose)   # Equilibrate
+    sim, _ = run_simulation(sim, verbose=verbose)  # Equilibrate
     if verbose:
         print(f'Production run')
     sim, df = run_simulation(sim, verbose=verbose)  # Production run
@@ -107,15 +106,15 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
 
     average_kinetic_energy = df['kinetic_energy'].mean()
     expected_kinetic_energy = 0.8 * 3 / 2
-    tolerance = 0.1*expected_kinetic_energy
+    tolerance = 0.1 * expected_kinetic_energy
     print(f'{average_kinetic_energy=} {expected_kinetic_energy=}')
     assert expected_kinetic_energy - tolerance < average_kinetic_energy < expected_kinetic_energy + tolerance
 
     average_pressure = df['pressure'].mean()
     expected_pressure = 2.185
-    tolerance = 0.1*expected_pressure
+    tolerance = 0.1 * expected_pressure
     print(f'{average_pressure=} {expected_pressure=}')
-    # assert expected_pressure - tolerance < average_pressure < expected_pressure + tolerance
+    assert expected_pressure - tolerance < average_pressure < expected_pressure + tolerance
 
     average_potential_energy = df['potential_energy'].mean()
     expected_potential_energy = -4.953 - 0.8 * 3 / 2
@@ -128,7 +127,6 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
     tolerance = 0.5
     print(f'{average_energy=} {expected_energy=}')
     assert expected_energy - tolerance < average_energy < expected_energy + tolerance
-
 
     if plot:
         # Plot positions
@@ -171,9 +169,6 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
         plt.xlabel('Time')
         plt.subplots_adjust(hspace=0)
         plt.show()
-
-
-
 
 
 if __name__ == '__main__':
