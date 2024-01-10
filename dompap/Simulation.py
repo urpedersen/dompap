@@ -406,17 +406,20 @@ class Simulation:
             self.step()
 
     def set_integrator(self,
-                       time_step: float = 0.01,
-                       target_temperature: float = 1.0,
-                       temperature_damping_time: float = 0.1):
+                       time_step: float = None,
+                       target_temperature: float = None,
+                       temperature_damping_time: float = None):
         """ Set integrator parameters
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
         """
-        self.time_step = np.float64(time_step)
-        self.temperature_target = np.float64(target_temperature)
-        self.temperature_damping_time = np.float64(temperature_damping_time)
+        if time_step is not None:
+            self.time_step = np.float64(time_step)
+        if target_temperature is not None:
+            self.temperature_target = np.float64(target_temperature)
+        if temperature_damping_time is not None:
+            self.temperature_damping_time = np.float64(temperature_damping_time)
 
     def number_of_particles(self) -> int:
         """ Get number of particles

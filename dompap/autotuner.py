@@ -65,6 +65,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, smallest_skin=0.
 
     sim.set_neighbor_list(skin=skin, method_str=fastest_method)
 
+
     # Time to compute force (if verbose)
     if verbose:
         sim_copy = sim.copy()
