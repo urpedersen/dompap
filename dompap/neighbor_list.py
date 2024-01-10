@@ -27,30 +27,6 @@ def get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance, max_n
     return neighbor_list
 
 
-@numba.njit
-def array_to_tuple(array: np.ndarray) -> tuple:
-    array = np.array(array, dtype=np.int32)
-    dim = array.shape[0]
-    if dim == 1:
-        return (array[0],)
-    elif dim == 2:
-        return (array[0], array[1])
-    elif dim == 3:
-        return (array[0], array[1], array[2])
-    elif dim == 4:
-        return (array[0], array[1], array[2], array[3])
-    elif dim == 5:
-        return (array[0], array[1], array[2], array[3], array[4])
-    elif dim == 6:
-        return (array[0], array[1], array[2], array[3], array[4], array[5])
-    elif dim == 7:
-        return (array[0], array[1], array[2], array[3], array[4], array[5], array[6])
-    elif dim == 8:
-        return (array[0], array[1], array[2], array[3], array[4], array[5], array[6], array[7])
-    else:
-        raise NotImplementedError(f'array_to_tuple is not implemented for arrays of shape {array.shape}.')
-
-
 def test_get_neighbor_list_3d():
     # Test 3D example
     positions = np.array([
