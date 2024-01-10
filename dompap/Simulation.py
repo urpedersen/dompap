@@ -98,6 +98,7 @@ class Simulation:
     pair_potential_r_cut: np.float64 = np.float64(1.0)
     neighbor_list_skin: np.float64 = np.float64(2.0)
     max_number_of_neighbors: np.float64 = np.int32(512)
+    number_of_neighbor_list_updates: int = 0
 
     # Simulation parameters
     number_of_steps: int = 0
@@ -206,6 +207,7 @@ class Simulation:
         >>> print(f'Max number of neighbours: {max_number_of_neighbours}')
         Max number of neighbours: 92
         """
+        self.number_of_neighbor_list_updates += 1
         if skin is not None:
             self.neighbor_list_skin = np.float64(skin)
         if max_number_of_neighbors is not None:
