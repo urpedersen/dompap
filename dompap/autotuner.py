@@ -87,7 +87,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, smallest_skin=0.
         toc = perf_counter()
         time_double_loop = toc - tic
         if verbose:
-            print(f'Time with double loop: {time_double_loop*1000:0.4f} milliseconds')
+            print(f'Time with double loop: {time_double_loop/steps*1000:0.4f} milliseconds')
         if time_double_loop < fastest_time:
             sim.force_method_str = 'double loop'
             if verbose:
