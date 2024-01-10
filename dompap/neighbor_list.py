@@ -27,6 +27,30 @@ def get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance, max_n
     return neighbor_list
 
 
+@numba.njit
+def array_to_tuple(array: np.ndarray) -> tuple:
+    array = np.array(array, dtype=np.int32)
+    dim = array.shape[0]
+    if dim == 1:
+        return (array[0],)
+    elif dim == 2:
+        return (array[0], array[1])
+    elif dim == 3:
+        return (array[0], array[1], array[2])
+    elif dim == 4:
+        return (array[0], array[1], array[2], array[3])
+    elif dim == 5:
+        return (array[0], array[1], array[2], array[3], array[4])
+    elif dim == 6:
+        return (array[0], array[1], array[2], array[3], array[4], array[5])
+    elif dim == 7:
+        return (array[0], array[1], array[2], array[3], array[4], array[5], array[6])
+    elif dim == 8:
+        return (array[0], array[1], array[2], array[3], array[4], array[5], array[6], array[7])
+    else:
+        raise NotImplementedError(f'array_to_tuple is not implemented for arrays of shape {array.shape}.')
+
+
 def test_get_neighbor_list_3d():
     # Test 3D example
     positions = np.array([
@@ -48,6 +72,7 @@ def test_get_neighbor_list_3d():
         [-1, -1, -1, -1],
         [0, -1, -1, -1]], dtype=np.int32))
 
+
 def test_get_neighbor_list_2d():
     # Test 2D example
     positions = np.array([
@@ -67,7 +92,10 @@ def test_get_neighbor_list_2d():
         [-1, -1, -1, -1],
         [0, -1, -1, -1]], dtype=np.int32))
 
+
 def get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors) -> np.ndarray:
+    """ Get neighbour list using a cell list (backend). This works for any number of spatial dimensions, but is slower,
+    since it cannot be numba.jit'ed. """
     number_of_spatial_dimensions = positions.shape[1]
     max_number_of_cell_neighbors = max_number_of_neighbors * 3 ** number_of_spatial_dimensions
     # Find the number of cells in each direction
@@ -87,7 +115,7 @@ def get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_num
     # Loop particles and find neighbors
     neighbor_list = np.zeros(shape=(number_of_particles, max_number_of_neighbors), dtype=np.int32) - 1  # -1 is empty
     for n in range(number_of_particles):
-        next_avalible_idx = 0
+        next_available_idx = 0
         position = positions[n]
         cell_idx = np.floor(position / cutoff_distance).astype(np.int32)
         number_of_spatial_dimensions = len(cell_idx)
@@ -109,12 +137,70 @@ def get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_num
                 other_position = positions[neighbor_cell[m]]
                 distance = get_distance(position, other_position, box_vectors)
                 if distance < cutoff_distance and neighbor_cell[m] != n:
-                    neighbor_list[n][next_avalible_idx] = neighbor_cell[m]
-                    next_avalible_idx += 1
+                    neighbor_list[n][next_available_idx] = neighbor_cell[m]
+                    next_available_idx += 1
+    return neighbor_list
+
+@numba.njit
+def get_neighbor_list_cell_list_3d(positions, box_vectors, cutoff_distance, max_number_of_neighbors) -> np.ndarray:
+    number_of_spatial_dimensions = positions.shape[1]
+    if number_of_spatial_dimensions != 3:
+        raise NotImplementedError(f'get_neighbor_list_cell_list_3d is only for 3 spatial dimensions.')
+    max_number_of_cell_neighbors = np.int32(max_number_of_neighbors * 3 ** number_of_spatial_dimensions)
+    # Find the number of cells in each direction
+    number_of_cells = np.ceil(box_vectors / cutoff_distance).astype(np.int32)
+    # Create a list of empty cells
+    cells_shape = (number_of_cells[0], number_of_cells[1], number_of_cells[2], max_number_of_cell_neighbors)
+    cells = np.zeros(shape=cells_shape, dtype=np.int32) - 1  # -1 is empty
+
+    # Loop particles and add them to the cells
+    number_of_particles = positions.shape[0]
+    for n in range(number_of_particles):
+        position = positions[n]
+        cell_idx = np.floor(position / cutoff_distance).astype(np.int32)
+        cell_idx_tuple = cell_idx[0], cell_idx[1], cell_idx[2]
+        this_cell = cells[cell_idx_tuple]
+        idx = np.sum(this_cell != -1)  # Index of the cell in the cells array
+        this_cell[idx] = n
+
+    # Loop particles and find neighbors
+    neighbor_list = np.zeros(shape=(number_of_particles, max_number_of_neighbors), dtype=np.int32) - 1  # -1 is empty
+    for n in range(number_of_particles):
+        next_available_idx = 0
+        position = positions[n]
+        cell_idx = np.floor(position / cutoff_distance).astype(np.int32)
+        number_of_spatial_dimensions = len(cell_idx)
+        # Loop over all cells in the neighborhood
+        for i in range(3 ** number_of_spatial_dimensions):
+            # Get the cell index of the neighbor cell
+            lst = []
+            tmp_i = i
+            for d in range(number_of_spatial_dimensions):
+                lst.append(tmp_i % 3 - 1)
+                tmp_i //= 3
+            cell_shift = np.array(lst, dtype=np.int32)
+            neighbor_cell_idx = cell_idx + cell_shift
+            # Apply periodic boundary conditions to cell idx
+            for d in range(number_of_spatial_dimensions):
+                if neighbor_cell_idx[d] < 0:
+                    neighbor_cell_idx[d] += number_of_cells[d]
+                elif neighbor_cell_idx[d] >= number_of_cells[d]:
+                    neighbor_cell_idx[d] -= number_of_cells[d]
+            # Loop particles in cell and add them to neighbor list
+            neighbor_cell_idx_tuple = neighbor_cell_idx[0], neighbor_cell_idx[1], neighbor_cell_idx[2]
+            neighbor_cell = cells[neighbor_cell_idx_tuple]
+            for m in range(max_number_of_cell_neighbors):
+                if neighbor_cell[m] == -1:
+                    break
+                other_position = positions[neighbor_cell[m]]
+                distance = get_distance(position, other_position, box_vectors)
+                if distance < cutoff_distance and neighbor_cell[m] != n:
+                    neighbor_list[n][next_available_idx] = neighbor_cell[m]
+                    next_available_idx += 1
     return neighbor_list
 
 
-def test_get_neighbor_list_cell_list():
+def test_get_neighbor_list_cell_list_3d():
     positions = np.array([
         [0, 0, 0],
         [1, 0, 0],
@@ -125,7 +211,7 @@ def test_get_neighbor_list_cell_list():
     box_vectors = np.array([6, 6, 6], dtype=np.float64)
     cutoff_distance = np.float64(1.5)
     max_number_of_neighbors = 4
-    neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    neighbor_list = get_neighbor_list_cell_list_3d(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
     assert np.all(neighbor_list == np.array([
         [5, 1, 2, 3],
         [0, 2, 3, -1],
@@ -134,6 +220,24 @@ def test_get_neighbor_list_cell_list():
         [-1, -1, -1, -1],
         [0, -1, -1, -1]], dtype=np.int32))
 
+
+def test_get_neighbor_list_cell_list_2d():
+    positions = np.array([
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [2, 2],
+        [5, 5]], dtype=np.float64)
+    box_vectors = np.array([6, 6], dtype=np.float64)
+    cutoff_distance = np.float64(1.5)
+    max_number_of_neighbors = 4
+    neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    assert np.all(neighbor_list == np.array([
+        [4, 1, 2, -1],
+        [0, 2, -1, -1],
+        [0, 1, -1, -1],
+        [-1, -1, -1, -1],
+        [0, -1, -1, -1]], dtype=np.int32))
 
 @numba.njit
 def neighbor_list_is_old(positions: np.ndarray,

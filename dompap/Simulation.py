@@ -94,7 +94,7 @@ class Simulation:
     # Neighbor list parameters
     energy_method_str = 'neighbor list'
     force_method_str = 'neighbor list'
-    neighbor_list_method_str = 'cell list'
+    neighbor_list_method_str = 'double loop'
     pair_potential_r_cut: np.float64 = np.float64(1.0)
     neighbor_list_skin: np.float64 = np.float64(2.0)
     max_number_of_neighbors: np.float64 = np.int32(512)
@@ -227,9 +227,14 @@ class Simulation:
         cutoff_distance = global_truncation_distance + self.neighbor_list_skin
         max_number_of_neighbours = self.max_number_of_neighbors
         if self.neighbor_list_method_str == 'cell list':
-            from .neighbor_list import get_neighbor_list_cell_list
-            self.neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance,
-                                                             max_number_of_neighbours)
+            if self.get_dimensions_of_space() == 3:
+                from .neighbor_list import get_neighbor_list_cell_list_3d
+                self.neighbor_list = get_neighbor_list_cell_list_3d(positions, box_vectors, cutoff_distance,
+                                                                    max_number_of_neighbours)
+            else:
+                from .neighbor_list import get_neighbor_list_cell_list
+                self.neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance,
+                                                                 max_number_of_neighbours)
         elif self.neighbor_list_method_str == 'double loop':
             from .neighbor_list import get_neighbor_list_double_loop
             self.neighbor_list = get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance,
