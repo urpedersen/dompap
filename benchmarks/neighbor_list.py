@@ -14,7 +14,7 @@ sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
 # sim.set_pair_potential('Harmonic repulsive')  # Test hardcoded potential
 # sim.force_method_str = 'vectorized'  # Test how force method affects performance
 sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
-sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=512)
+sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=512, method_str='double loop')
 sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=1.0)
 sim.set_density(density=1.0)
 

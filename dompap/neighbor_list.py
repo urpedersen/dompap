@@ -5,7 +5,7 @@ from .positions import get_distance, get_displacement_vector
 
 
 @numba.njit(parallel=True)
-def get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors) -> np.ndarray:
+def get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance, max_number_of_neighbors) -> np.ndarray:
     """ Get neighbour list using a N^2 loop (backend) """
     number_of_particles: int = positions.shape[0]
 
@@ -39,7 +39,7 @@ def test_get_neighbor_list_3d():
     box_vectors = np.array([6, 6, 6], dtype=np.float64)
     cutoff_distance = np.float64(1.5)
     max_number_of_neighbors = 4
-    neighbor_list = get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    neighbor_list = get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
     assert np.all(neighbor_list == np.array([
         [1, 2, 3, 5],
         [0, 2, 3, -1],
@@ -59,7 +59,7 @@ def test_get_neighbor_list_2d():
     box_vectors = np.array([6, 6], dtype=np.float64)
     cutoff_distance = np.float64(1.5)
     max_number_of_neighbors = 4
-    neighbor_list = get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
+    neighbor_list = get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance, max_number_of_neighbors)
     assert np.all(neighbor_list == np.array([
         [1, 2, 4, -1],
         [0, 2, -1, -1],

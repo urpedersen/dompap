@@ -94,6 +94,7 @@ class Simulation:
     # Neighbor list parameters
     energy_method_str = 'neighbor list'
     force_method_str = 'neighbor list'
+    neighbor_list_method_str = 'cell list'
     pair_potential_r_cut: np.float64 = np.float64(1.0)
     neighbor_list_skin: np.float64 = np.float64(2.0)
     max_number_of_neighbors: np.float64 = np.int32(512)
@@ -194,7 +195,8 @@ class Simulation:
         self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
                                            size=self.positions.shape).astype(np.float64)
 
-    def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None):
+    _KNOWN_CELL_LIST_METHODS = {'cell list', 'double loop'}
+    def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
         """ Update neighbour list
         >>> from dompap import Simulation
         >>> from dompap.neighbor_list import get_number_of_neighbors
@@ -204,11 +206,14 @@ class Simulation:
         >>> print(f'Max number of neighbours: {max_number_of_neighbours}')
         Max number of neighbours: 92
         """
-        from .neighbor_list import get_neighbor_list
         if skin is not None:
             self.neighbor_list_skin = np.float64(skin)
         if max_number_of_neighbors is not None:
             self.max_number_of_neighbors = np.int32(max_number_of_neighbors)
+        if method_str is not None:
+            if method_str not in self._KNOWN_CELL_LIST_METHODS:
+                raise ValueError(f'Unknown neighbor list method: {method_str}. Try: {self._KNOWN_CELL_LIST_METHODS}.')
+            self.neighbor_list_method_str = method_str
         # Get largest possible sigma
         number_of_particles = self.positions.shape[0]
         largest_sigma = 0.0
@@ -221,7 +226,16 @@ class Simulation:
         box_vectors = self.box_vectors
         cutoff_distance = global_truncation_distance + self.neighbor_list_skin
         max_number_of_neighbours = self.max_number_of_neighbors
-        self.neighbor_list = get_neighbor_list(positions, box_vectors, cutoff_distance, max_number_of_neighbours)
+        if self.neighbor_list_method_str == 'cell list':
+            from .neighbor_list import get_neighbor_list_cell_list
+            self.neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance,
+                                                             max_number_of_neighbours)
+        elif self.neighbor_list_method_str == 'double loop':
+            from .neighbor_list import get_neighbor_list_double_loop
+            self.neighbor_list = get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance,
+                                                               max_number_of_neighbours)
+        else:
+            raise ValueError(f'Unknown neighbor list method: {self.neighbor_list_method_str}')
         self.positions_neighbour_list = self.positions.copy()
 
 
@@ -230,7 +244,7 @@ class Simulation:
         from .neighbor_list import neighbor_list_is_old
         if check and not neighbor_list_is_old(self.positions, self.positions_neighbour_list, self.box_vectors,
                                               self.neighbor_list_skin):
-            return self
+            return
         self.set_neighbor_list()
 
     def set_pair_potential(self, pair_potential_str: str = '(1-r)**2', r_cut: float = 1.0):
