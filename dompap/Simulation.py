@@ -92,13 +92,18 @@ class Simulation:
     masses: np.ndarray = field(default_factory=default_masses)
 
     # Neighbor list parameters
+    pair_potential_r_cut: np.float64 = np.float64(1.0)
+    neighbor_list_skin: np.float64 = np.float64(1.0)
+    max_number_of_neighbors: np.float64 = np.int32(512)
+    number_of_neighbor_list_updates: int = 0
+
+    # Selecting Algorithms
     energy_method_str = 'neighbor list'
     force_method_str = 'neighbor list'
     neighbor_list_method_str = 'double loop'
-    pair_potential_r_cut: np.float64 = np.float64(1.0)
-    neighbor_list_skin: np.float64 = np.float64(2.0)
-    max_number_of_neighbors: np.float64 = np.int32(512)
-    number_of_neighbor_list_updates: int = 0
+    _KNOWN_ENERGY_METHODS = {'neighbor list', 'double loop'}
+    _KNOWN_FORCE_METHODS = {'neighbor list', 'double loop', 'double loop single core', 'vectorized'}
+    _KNOWN_CELL_LIST_METHODS = {'cell list', 'double loop'}
 
     # Simulation parameters
     number_of_steps: int = 0
@@ -196,7 +201,6 @@ class Simulation:
         self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
                                            size=self.positions.shape).astype(np.float64)
 
-    _KNOWN_CELL_LIST_METHODS = {'cell list', 'double loop'}
 
     def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
         """ Update neighbour list
@@ -206,7 +210,7 @@ class Simulation:
         >>> sim.set_neighbor_list()
         >>> max_number_of_neighbours = np.max(get_number_of_neighbors(sim.neighbor_list))
         >>> print(f'Max number of neighbours: {max_number_of_neighbours}')
-        Max number of neighbours: 92
+        Max number of neighbours: 26
         """
         self.number_of_neighbor_list_updates += 1
         if skin is not None:
@@ -254,7 +258,8 @@ class Simulation:
             return
         self.set_neighbor_list()
 
-    def set_pair_potential(self, pair_potential_str: str = '(1-r)**2', r_cut: float = 1.0):
+    def set_pair_potential(self, pair_potential_str: str = '(1-r)**2', r_cut: float = 1.0,
+                           force_method=None, energy_method=None):
         """ Set pair potential.py and force
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -280,6 +285,18 @@ class Simulation:
             pair_potential_str=pair_potential_str,
             r_cut=r_cut
         )
+
+        # Set algorithm for energy and force
+        if force_method is not None:
+            if force_method not in self._KNOWN_FORCE_METHODS:
+                raise ValueError(f'Unknown force method: {force_method}. Try: {self._KNOWN_FORCE_METHODS}.')
+            self.force_method_str = force_method
+        if energy_method is not None:
+            if energy_method not in self._KNOWN_ENERGY_METHODS:
+                raise ValueError(f'Unknown energy method: {energy_method}. Try: {self._KNOWN_ENERGY_METHODS}.')
+            self.energy_method_str = energy_method
+
+        # Reset neighbor list
         self.set_neighbor_list()
 
     def set_pair_potential_parameters(self, sigma: float = 1.0, epsilon: float = 1.0):
@@ -437,7 +454,7 @@ class Simulation:
         >>> print(f'Density: {sim.get_density():.3f}')
         Density: 1.000
         """
-        return self.number_of_particles() / np.prod(self.box_vectors)
+        return float(self.number_of_particles() / self.get_volume())
 
     def set_density(self, density: float = 1.0):
         """ Set density of the system
@@ -490,7 +507,7 @@ class Simulation:
     def get_number_of_particles(self):
         return self.positions.shape[0]
 
-    def get_kinetic_energy(self):
+    def get_kinetic_energy(self) -> float:
         """ Get kinetic energy of the system
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -500,7 +517,7 @@ class Simulation:
         """
         v = self.velocities
         m = self.masses
-        return 0.5 * np.sum(m * v * v)
+        return float(0.5 * np.sum(m * v * v))
 
     def get_diameters(self) -> np.ndarray:
         """ Get diameters of particles
@@ -516,7 +533,7 @@ class Simulation:
             diameters[n] = self.sigma_func(n, n)
         return diameters
 
-    def get_time(self):
+    def get_time(self) -> float:
         """ Get time of the simulation
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -526,14 +543,14 @@ class Simulation:
         >>> print(sim.get_time())
         0.1
         """
-        return self.number_of_steps * self.time_step
+        return float(self.number_of_steps * self.time_step)
 
     def get_virial(self) -> float:
         from .potential import _get_virial_double_loop
         self.update_neighbor_list()
         virial = _get_virial_double_loop(self.positions, self.box_vectors, self.pair_force,
                                          self.sigma_func, self.epsilon_func)
-        return virial
+        return float(virial)
 
     def get_pressure(self) -> float:
         """ Get pressure of the system
@@ -550,16 +567,16 @@ class Simulation:
         v = self.velocities
         m = self.masses
         P_id = np.sum(v * v * m) / D / V
-        return P_c + P_id
+        return float(P_c + P_id)
 
-    def get_volume(self):
+    def get_volume(self) -> float:
         """ Get volume of the system
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.get_volume())
         125.0
         """
-        return np.prod(self.box_vectors)
+        return float(np.prod(self.box_vectors))
 
     def set_particle_types(self, types):
         """ Set particle types
@@ -578,13 +595,13 @@ class Simulation:
 
         # Save particle data to CSV file
         dimensions_of_space = self.get_dimensions_of_space()
-        header = "particle_type,mass"
+        header = "ptype,mass"
         for d in range(dimensions_of_space):
-            header += f",position_{d}"
+            header += f",pos_{d}"
         for d in range(dimensions_of_space):
-            header += f",velocity_{d}"
+            header += f",vel_{d}"
         for d in range(dimensions_of_space):
-            header += f",image_position_{d}"
+            header += f",imgpos_{d}"
         for d in range(dimensions_of_space):
             header += f",beta_{d}"
         data = ""
@@ -603,11 +620,16 @@ class Simulation:
 
         # Save meta data to TOML file
         meta_data_dict = {
-            'dimensions_of_space': self.get_dimensions_of_space(),
             'box_vectors': self.box_vectors.tolist(),
+            'dimensions_of_space': self.get_dimensions_of_space(),
             'number_of_particles': self.number_of_particles(),
             'temperature': self.get_temperature(),
             'potential_energy': self.get_potential_energy(),
+            'kinetic_energy': self.get_kinetic_energy(),
+            'pressure': self.get_pressure(),
+            'virial': self.get_virial(),
+            'density': self.get_density(),
+            'volume': self.get_volume(),
             'pair_potential_str': self.pair_potential_str,
             'pair_potential_r_cut': float(self.pair_potential_r_cut),
             'neighbor_list_skin': float(self.neighbor_list_skin),
@@ -622,6 +644,103 @@ class Simulation:
             'number_of_neighbor_list_updates': int(self.number_of_neighbor_list_updates),
         }
         print(toml.dumps(meta_data_dict), file=open(meta_data, 'w'))
+
+    def from_disk(self, particle_data='simulation.csv', meta_data='simulation.toml',
+                  verbose=False, set_only_particle_data=True) -> dict:
+        """ Load simulation data from disk. Particle data as CSV file, and meta data as TOML file.
+         Set simulation box vectors, and particle data. Return meta data from disk as dict.
+        """
+
+        # Check of files exist
+        import os.path
+        if not os.path.isfile(particle_data):
+            raise FileNotFoundError(f'File not found: {particle_data}')
+        if not os.path.isfile(meta_data):
+            raise FileNotFoundError(f'File not found: {meta_data}')
+
+        # Get dimension of space and box vectors from metadata
+        meta_data_dict = toml.load(meta_data)
+        box_vectors = np.array(meta_data_dict['box_vectors'], dtype=np.float64)
+        dimensions_of_space = box_vectors.shape[0]
+        number_of_particles = meta_data_dict['number_of_particles']
+        if verbose:
+            print('    Old values')
+            print(f"Dimensions of space: {self.get_dimensions_of_space()}")
+            print(f"number_of_particles: {self.number_of_particles()}")
+            print(f"Box vectors: {self.box_vectors}")
+            print('    New values')
+            print(f"Dimensions of space: {dimensions_of_space}")
+            print(f"Box vectors: {box_vectors}")
+            print(f"number_of_particles: {number_of_particles}")
+
+        if verbose:
+            print('    Old values for particle 0:')
+            print(f"particle_type: {self.particle_types[0]}")
+            print(f"mass: {self.masses[0]}")
+            print(f"position: {self.positions[0]}")
+            print(f"velocity: {self.velocities[0]}")
+            print(f"image_position: {self.image_positions[0]}")
+            print(f"beta: {self.betas[0]}")
+
+        # Reallocate arrays with particle data
+        self.particle_types = np.zeros(shape=(number_of_particles, 1), dtype=np.int32)
+        self.positions = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
+        self.velocities = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
+        self.image_positions = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.int32)
+        self.betas = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
+        self.masses = np.zeros(shape=(number_of_particles, 1), dtype=np.float64)
+
+        # Get particle data from CSV file
+        with open(particle_data) as file:
+            lines = file.readlines()
+        col_names = lines[0].split(',')
+        for line in lines[1:]:
+            cols = line.split(',')
+            for i, (value, name) in enumerate(zip(cols, col_names)):
+                if '_' in name:  # This is a position, velocity, image position or beta
+                    name, d = name.split('_')
+                    d = int(d)
+                    if name == 'pos':
+                        self.positions[i, d] = float(value)
+                    elif name == 'vel':
+                        self.velocities[i, d] = float(value)
+                    elif name == 'imgpos':
+                        self.image_positions[i, d] = int(value)
+                    elif name == 'beta':
+                        self.betas[i, d] = float(value)
+                    else:
+                        raise ValueError(f'Unknown column name: {name}')
+                else:  # This is a particle type or mass
+                    if name == 'ptype':
+                        self.particle_types[i, 0] = int(value)
+                    elif name == 'mass':
+                        self.masses[i, 0] = float(value)
+                    else:
+                        raise ValueError(f'Unknown column name: {name}')
+        if verbose:
+            print('    New values for particle 0:')
+            print(f"particle_type: {self.particle_types[0]}")
+            print(f"mass: {self.masses[0]}")
+            print(f"position: {self.positions[0]}")
+            print(f"velocity: {self.velocities[0]}")
+            print(f"image_position: {self.image_positions[0]}")
+            print(f"beta: {self.betas[0]}")
+
+        # Set other simulation variables
+        if not set_only_particle_data:
+            self.set_pair_potential(pair_potential_str=meta_data_dict['pair_potential_str'],
+                                    r_cut=meta_data_dict['pair_potential_r_cut'],
+                                    force_method=meta_data_dict['force_method_str'],
+                                    energy_method=meta_data_dict['energy_method_str'])
+            self.set_neighbor_list(skin=meta_data_dict['neighbor_list_skin'],
+                                   max_number_of_neighbors=meta_data_dict['max_number_of_neighbors'],
+                                   method_str=meta_data_dict['neighbor_list_method_str'])
+            self.set_integrator(time_step=meta_data_dict['time_step'],
+                                target_temperature=meta_data_dict['temperature_target'],
+                                temperature_damping_time=meta_data_dict['temperature_damping_time'])
+            self.number_of_steps = meta_data_dict['number_of_steps']
+            self.number_of_neighbor_list_updates = meta_data_dict['number_of_neighbor_list_updates']
+        return meta_data_dict
 
 def test_simulation():
     sim = Simulation()
