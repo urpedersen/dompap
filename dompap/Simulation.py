@@ -191,6 +191,8 @@ class Simulation:
          [1.]]
         """
         self.masses = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(masses)
+        if self.masses.shape != self.particle_types.shape:
+            self.particle_types = np.zeros(shape=self.masses.shape, dtype=np.int32)
 
     def set_random_velocities(self, temperature: float = 1.0):
         """ Set velocities from Normal distribution with variance temperature / mass
@@ -646,7 +648,7 @@ class Simulation:
         print(toml.dumps(meta_data_dict), file=open(meta_data, 'w'))
 
     def from_disk(self, particle_data='simulation.csv', meta_data='simulation.toml',
-                  verbose=False, set_only_particle_data=True) -> dict:
+                  verbose=False, set_only_particle_data=False) -> dict:
         """ Load simulation data from disk. Particle data as CSV file, and meta data as TOML file.
          Set simulation box vectors, and particle data. Return meta data from disk as dict.
         """
@@ -682,6 +684,9 @@ class Simulation:
             print(f"image_position: {self.image_positions[0]}")
             print(f"beta: {self.betas[0]}")
 
+        # Set new box
+        self.box_vectors = box_vectors
+
         # Reallocate arrays with particle data
         self.particle_types = np.zeros(shape=(number_of_particles, 1), dtype=np.int32)
         self.positions = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
@@ -694,9 +699,9 @@ class Simulation:
         with open(particle_data) as file:
             lines = file.readlines()
         col_names = lines[0].split(',')
-        for line in lines[1:]:
+        for i, line in enumerate(lines[1:]):
             cols = line.split(',')
-            for i, (value, name) in enumerate(zip(cols, col_names)):
+            for value, name in zip(cols, col_names):
                 if '_' in name:  # This is a position, velocity, image position or beta
                     name, d = name.split('_')
                     d = int(d)
