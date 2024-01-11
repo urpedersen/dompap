@@ -5,11 +5,13 @@ sim = Simulation()
 
 # Setup simulation
 sim.set_positions(unit_cell_coordinates=([0.0, 0.0, 0.0],), cells=(5, 5, 5), lattice_constants=(1.0, 1.0, 1.0))
+sim.set_density(density=1.0)
 sim.set_masses(masses=1.0)
 sim.set_random_velocities(temperature=1.0)
-sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0,
+                       force_method='neighbor list', energy_method='neighbor list')
 sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
-sim.set_neighbor_list(skin=0.5, max_number_of_neighbors=128)
+sim.set_neighbor_list(skin=0.5, max_number_of_neighbors=128, method_str='double loop')
 sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
 
 # Run simulation

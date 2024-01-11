@@ -128,6 +128,7 @@ def test_get_total_energy():
     energy = _get_total_energy(positions, box_vectors, pair_potential, neighbor_list, sigma_func, epsilon_func)
     assert energy == 1.0, f'{energy=}'
 
+
 @numba.njit(parallel=True)
 def _get_total_energy_double_loop(positions: np.ndarray,
                                   box_vectors: np.ndarray,
@@ -138,8 +139,8 @@ def _get_total_energy_double_loop(positions: np.ndarray,
     dimension_of_space = positions.shape[1]
     energy: float = 0.0
     number_of_particles = positions.shape[0]
-    for n in numba.prange(number_of_particles-1):
-        for m in range(n+1, number_of_particles):
+    for n in numba.prange(number_of_particles - 1):
+        for m in range(n + 1, number_of_particles):
             displacement = positions[n] - positions[m]
             # Periodic boundary conditions
             for dim in range(dimension_of_space):
@@ -153,6 +154,7 @@ def _get_total_energy_double_loop(positions: np.ndarray,
             energy = energy + epsilon * pair_potential(distance / sigma).astype(np.float64)
     return energy
 
+
 def test_get_total_energy_double_loop():
     positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
     box_vectors = np.array([3, 3, 3], dtype=np.float64)
@@ -161,6 +163,7 @@ def test_get_total_energy_double_loop():
     epsilon_func = numba.njit(lambda n, m: np.float64(4))
     energy = _get_total_energy_double_loop(positions, box_vectors, pair_potential, sigma_func, epsilon_func)
     assert energy == 1.0, f'{energy=}'
+
 
 @numba.njit(parallel=True)
 def _get_forces(positions: np.ndarray,
@@ -272,6 +275,7 @@ def test_get_forces_double_loop():
     forces = _get_forces_double_loop(positions, box_vectors, pair_force, sigma_func, epsilon_func)
     assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
 
+
 @numba.njit(parallel=True)
 def _get_virial_double_loop(positions: np.ndarray,
                             box_vectors: np.ndarray,
@@ -282,7 +286,7 @@ def _get_virial_double_loop(positions: np.ndarray,
     num_particles = positions.shape[0]
     dimension_of_space = positions.shape[1]
     virial: np.float64 = np.float64(0.0)
-    for n in numba.prange(num_particles-1):
+    for n in numba.prange(num_particles - 1):
         for m in range(n + 1, num_particles):
             displacement: np.float64 = positions[n] - positions[m]
             # Periodic boundary conditions
@@ -296,4 +300,9 @@ def _get_virial_double_loop(positions: np.ndarray,
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
             virial += scalar_force * distance
-    return numpy.float64(virial/dimension_of_space)
+    return numpy.float64(virial / dimension_of_space)
+
+
+def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func):
+    """ Get forces on all particles using vectorized operations """
+    raise NotImplementedError
