@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 import numba
 import numpy as np
-
+import toml
 
 DEFAULT_SPATIAL_DIMENSION = 3
 DEFAULT_NUMBER_OF_PARTICLES = 125  # 5x5x5 simple cubic lattice
@@ -197,6 +197,7 @@ class Simulation:
                                            size=self.positions.shape).astype(np.float64)
 
     _KNOWN_CELL_LIST_METHODS = {'cell list', 'double loop'}
+
     def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
         """ Update neighbour list
         >>> from dompap import Simulation
@@ -244,7 +245,6 @@ class Simulation:
         else:
             raise ValueError(f'Unknown neighbor list method: {self.neighbor_list_method_str}')
         self.positions_neighbour_list = self.positions.copy()
-
 
     def update_neighbor_list(self, check=True):
         """ Update neighbour list if needed """
@@ -340,7 +340,7 @@ class Simulation:
             from .potential import _get_forces
             self.update_neighbor_list()
             forces = _get_forces(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
-                             self.sigma_func, self.epsilon_func)
+                                 self.sigma_func, self.epsilon_func)
             return forces
         elif self.force_method_str == 'double loop':
             from .potential import _get_forces_double_loop
@@ -459,9 +459,9 @@ class Simulation:
         >>> print(sim.get_dimensions_of_space())
         3
         """
-        return self.box_vectors.shape[0]
+        return int(self.box_vectors.shape[0])
 
-    def get_temperature(self):
+    def get_temperature(self) -> float:
         """ Get temperature of the system
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -474,7 +474,7 @@ class Simulation:
         number_of_particles = self.number_of_particles()
         v_squared = np.sum(v ** 2, axis=1)
         temperature = np.sum(m * v_squared) / (dimensions_of_space * number_of_particles)
-        return temperature
+        return float(temperature)
 
     def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
         """ Get radial distribution function
@@ -500,7 +500,7 @@ class Simulation:
         """
         v = self.velocities
         m = self.masses
-        return 0.5 * np.sum(m*v*v)
+        return 0.5 * np.sum(m * v * v)
 
     def get_diameters(self) -> np.ndarray:
         """ Get diameters of particles
@@ -549,7 +549,7 @@ class Simulation:
         D = self.get_dimensions_of_space()
         v = self.velocities
         m = self.masses
-        P_id = np.sum(v*v*m) / D / V
+        P_id = np.sum(v * v * m) / D / V
         return P_c + P_id
 
     def get_volume(self):
@@ -573,7 +573,55 @@ class Simulation:
         """
         self.particle_types = np.ones_like(self.masses, dtype=np.int32) * types
 
+    def to_disk(self, particle_data='simulation.csv', meta_data='simulation.toml'):
+        """ Save simulation data to disk. Particle data as CSV file, and meta data as TOML file. """
 
+        # Save particle data to CSV file
+        dimensions_of_space = self.get_dimensions_of_space()
+        header = "particle_type,mass"
+        for d in range(dimensions_of_space):
+            header += f",position_{d}"
+        for d in range(dimensions_of_space):
+            header += f",velocity_{d}"
+        for d in range(dimensions_of_space):
+            header += f",image_position_{d}"
+        for d in range(dimensions_of_space):
+            header += f",beta_{d}"
+        data = ""
+        for n in range(self.number_of_particles()):
+            data += "\n"
+            data += f"{self.particle_types[n, 0]},{self.masses[n, 0]}"
+            for d in range(dimensions_of_space):
+                data += f",{self.positions[n, d]}"
+            for d in range(dimensions_of_space):
+                data += f",{self.velocities[n, d]}"
+            for d in range(dimensions_of_space):
+                data += f",{self.image_positions[n, d]}"
+            for d in range(dimensions_of_space):
+                data += f",{self.betas[n, d]}"
+        print(header + data, file=open(particle_data, 'w'))
+
+        # Save meta data to TOML file
+        meta_data_dict = {
+            'dimensions_of_space': self.get_dimensions_of_space(),
+            'box_vectors': self.box_vectors.tolist(),
+            'number_of_particles': self.number_of_particles(),
+            'temperature': self.get_temperature(),
+            'potential_energy': self.get_potential_energy(),
+            'pair_potential_str': self.pair_potential_str,
+            'pair_potential_r_cut': float(self.pair_potential_r_cut),
+            'neighbor_list_skin': float(self.neighbor_list_skin),
+            'max_number_of_neighbors': int(self.max_number_of_neighbors),
+            'neighbor_list_method_str': self.neighbor_list_method_str,
+            'energy_method_str': self.energy_method_str,
+            'force_method_str': self.force_method_str,
+            'time_step': float(self.time_step),
+            'temperature_target': float(self.temperature_target),
+            'temperature_damping_time': float(self.temperature_damping_time),
+            'number_of_steps': int(self.number_of_steps),
+            'number_of_neighbor_list_updates': int(self.number_of_neighbor_list_updates),
+        }
+        print(toml.dumps(meta_data_dict), file=open(meta_data, 'w'))
 
 def test_simulation():
     sim = Simulation()

@@ -1,0 +1,18 @@
+dimensions_of_space = 3
+box_vectors = [ 5.0, 5.0, 5.0,]
+number_of_particles = 125
+temperature = 1.0148870359244608
+potential_energy = 0.0
+pair_potential_str = "(1-r)**2"
+pair_potential_r_cut = 1.0
+neighbor_list_skin = 2.0
+max_number_of_neighbors = 512
+neighbor_list_method_str = "double loop"
+energy_method_str = "neighbor list"
+force_method_str = "neighbor list"
+time_step = 0.01
+temperature_target = 1.0
+temperature_damping_time = 0.1
+number_of_steps = 0
+number_of_neighbor_list_updates = 3
+
