@@ -74,3 +74,6 @@ df = pd.DataFrame(data=thermodynamic_data, columns=columns)
 df['pressure'] = df['temperature'] * sim.get_density() + df['virial'] / sim.get_volume()
 
 print(df.describe())
+
+# Save final state to disk
+sim.to_disk(particle_data='harmonic_repulsive_3d.csv', meta_data='harmonic_repulsive_3d.toml')

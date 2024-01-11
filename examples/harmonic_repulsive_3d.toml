@@ -1,0 +1,23 @@
+box_vectors = [ 8.549879733383484, 8.549879733383484, 8.549879733383484,]
+dimensions_of_space = 3
+number_of_particles = 500
+temperature = 0.00202368115904137
+potential_energy = 0.3069163607188636
+kinetic_energy = 1.5177608692810276
+pressure = 0.009655404491055794
+virial = 5.022787227389184
+density = 0.8000000000000002
+volume = 624.9999999999999
+pair_potential_str = "(1-r)**2"
+pair_potential_r_cut = 1.0
+neighbor_list_skin = 0.3
+max_number_of_neighbors = 128
+neighbor_list_method_str = "cell list"
+energy_method_str = "neighbor list"
+force_method_str = "neighbor list"
+time_step = 0.01
+temperature_target = 0.002
+temperature_damping_time = 1.0
+number_of_steps = 50200
+number_of_neighbor_list_updates = 480
+
