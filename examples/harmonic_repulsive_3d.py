@@ -60,8 +60,8 @@ sim = autotune(sim, steps=2_000, verbose=True, plot=True, smallest_skin=0.3, ste
 print(f'{sim.neighbor_list_skin=}')
 
 # Production run
-steps = 10_000  # Number of steps to run
-stride = 100  # Stride between evaluations
+steps = 40_000  # Number of steps to run
+stride = 40  # Stride between evaluations
 thermodynamic_data = []
 for step in range(steps):
     if step % stride == 0:
