@@ -9,7 +9,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, smallest_skin=0.
     sim_copy.step()  # Run one step to initialize
 
     # Find the fastest method for neighbor list update method
-    methods = {'double loop', 'cell list'}
+    methods = ['double loop', 'cell list']
     results = dict()
     for method in methods:
         sim_copy.set_neighbor_list(method_str=method)
