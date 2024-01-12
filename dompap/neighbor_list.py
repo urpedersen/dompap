@@ -17,7 +17,14 @@ def get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance, max_n
             if n == m:
                 continue
             other_position = positions[m]
-            distance = get_distance(position, other_position, box_vectors)
+            displacement = position - other_position
+            # Periodic boundary conditions
+            for d in range(len(displacement)):
+                if displacement[d] < -box_vectors[d] / 2:
+                    displacement[d] += box_vectors[d]
+                elif displacement[d] > box_vectors[d] / 2:
+                    displacement[d] -= box_vectors[d]
+            distance = np.sqrt(np.sum(displacement ** 2))
             if distance < cutoff_distance:
                 neighbor_list[n][current_idx] = m
                 current_idx += 1
