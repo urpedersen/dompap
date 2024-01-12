@@ -239,11 +239,13 @@ def _get_forces_double_loop(positions: np.ndarray,
                             box_vectors: np.ndarray,
                             pair_force: callable,
                             sigma_func: callable,
-                            epsilon_func: callable) -> np.ndarray:
+                            epsilon_func: callable
+                            ) -> np.ndarray:
     """ Get forces on all particles using double loop """
     forces = np.zeros(shape=positions.shape, dtype=np.float64)
     number_of_particles = positions.shape[0]
     for n in numba.prange(number_of_particles):
+        this_force = np.zeros(shape=positions.shape[1], dtype=np.float64)
         for m in range(number_of_particles):
             if m == n:
                 continue
@@ -262,7 +264,8 @@ def _get_forces_double_loop(positions: np.ndarray,
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
             unit_vector = displacement / distance
-            forces[n] = forces[n] + scalar_force * unit_vector
+            this_force = this_force + scalar_force * unit_vector
+        forces[n] = this_force
     return forces
 
 

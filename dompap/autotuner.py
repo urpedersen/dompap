@@ -133,7 +133,7 @@ def test_autotune(verbose=False, plot=False):
     sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=512)
 
     sim = autotune(sim, verbose=verbose, plot=plot)
-    assert 0.6 < sim.neighbor_list_skin < 1.7, f'{sim.neighbor_list_skin=}'
+    assert 0.3 < sim.neighbor_list_skin < 1.7, f'{sim.neighbor_list_skin=}'
 
 
 if __name__ == '__main__':

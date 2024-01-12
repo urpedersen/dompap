@@ -203,7 +203,6 @@ class Simulation:
         self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
                                            size=self.positions.shape).astype(np.float64)
 
-
     def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
         """ Update neighbour list
         >>> from dompap import Simulation
@@ -746,6 +745,7 @@ class Simulation:
             self.number_of_steps = meta_data_dict['number_of_steps']
             self.number_of_neighbor_list_updates = meta_data_dict['number_of_neighbor_list_updates']
         return meta_data_dict
+
 
 def test_simulation():
     sim = Simulation()
