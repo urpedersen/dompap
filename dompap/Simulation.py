@@ -180,8 +180,9 @@ class Simulation:
         if self.velocities.shape != self.positions.shape:
             self.velocities = np.random.normal(loc=0.0, scale=1.0, size=self.positions.shape).astype(np.float64)
 
-    def set_masses(self, masses: float = 1.0):
-        """ Set masses of particles
+    def set_masses(self, masses: float | list | np.ndarray = 1.0):
+        """ Set masses of particles.
+        The masses can be given as a float, list or ndarray
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_masses(masses=1.0)
@@ -189,10 +190,34 @@ class Simulation:
         [[1.]
          [1.]
          [1.]]
+        >>> sim.set_masses(masses=[1.0]*sim.number_of_particles())
+        >>> print(sim.masses[:3])
+        [[1.]
+         [1.]
+         [1.]]
+        >>> sim.set_masses(masses=np.ones(sim.number_of_particles()))
+        >>> print(sim.masses[:3])
+        [[1.]
+         [1.]
+         [1.]]
         """
-        self.masses = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(masses)
+        # If type is float, set all masses to the same value
+        if isinstance(masses, float):
+            self.masses = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(masses)
+        # If type is list, set masses to the values in the list
+        elif isinstance(masses, list):
+            self.masses = np.array(masses, dtype=np.float64).reshape(-1, 1)
+        # If type is ndarray, set masses to the values in the ndarray
+        elif isinstance(masses, np.ndarray):
+            self.masses = masses.reshape(-1, 1)
+        else:
+            raise ValueError(f'Unknown type of masses: {type(masses)}')
+        expected_shape = (self.positions.shape[0], 1)
+        if self.masses.shape != expected_shape:
+            raise ValueError(f'Expected shape of masses: {expected_shape}, got: {self.masses.shape}')
         if self.masses.shape != self.particle_types.shape:
             self.particle_types = np.zeros(shape=self.masses.shape, dtype=np.int32)
+
 
     def set_random_velocities(self, temperature: float = 1.0):
         """ Set velocities from Normal distribution with variance temperature / mass
@@ -202,6 +227,17 @@ class Simulation:
         """
         self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
                                            size=self.positions.shape).astype(np.float64)
+
+    def set_types(self, types: int | list = 0):
+        if isinstance(types, int):
+            self.particle_types = np.ones(shape=(self.positions.shape[0], 1), dtype=np.int32) * np.int32(types)
+        elif isinstance(types, list):
+            self.particle_types = np.array(types, dtype=np.int32).reshape(-1, 1)
+        else:
+            raise ValueError(f'Unknown type of types: {type(types)}')
+        expected_shape = (self.positions.shape[0], 1)
+        if self.particle_types.shape != expected_shape:
+            raise ValueError(f'Expected shape of types is {expected_shape} but got {self.particle_types.shape}')
 
     def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
         """ Update neighbour list
@@ -301,14 +337,47 @@ class Simulation:
         self.set_neighbor_list()
 
     def set_pair_potential_parameters(self, sigma: float = 1.0, epsilon: float = 1.0):
-        """ Set potential parameters
+        """ Set potential parameters. Give sigma and epsilon as floats or callables.
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
+        >>> sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)  # Set all sigmas and epsilons to 1.0
+        >>> print(sim.sigma_func(0, 0))
+        1.0
+        >>> print(sim.sigma_func(0, 1))
+        1.0
+        >>> def sigma_func(n, m):
+        ...     if n == m:
+        ...         return 1.0
+        ...     else:
+        ...         return 1.2
+        >>> def epsilon_func(n, m):
+        ...     if n == m:
+        ...         return 1.0
+        ...     else:
+        ...         return 0.5
+        >>> sim.set_pair_potential_parameters(sigma=sigma_func, epsilon=epsilon_func)
+        >>> print(sim.sigma_func(0, 0))
+        1.0
+        >>> print(sim.sigma_func(0, 1))
+        1.2
+        >>> print(sim.epsilon_func(0, 0))
+        1.0
+        >>> print(sim.epsilon_func(0, 1))
+        0.5
         """
-        self.sigma_func = numba.njit(lambda n, m: np.float64(sigma))
-        self.epsilon_func = numba.njit(lambda n, m: np.float64(epsilon))
-        self.set_neighbor_list()
+        if isinstance(sigma, float):
+            self.sigma_func = numba.njit(lambda n, m: np.float64(sigma))
+        elif callable(sigma):
+            self.sigma_func = numba.njit(sigma)
+        else:
+            raise ValueError(f'Unknown type of sigma: {type(sigma)}')
+        if isinstance(epsilon, float):
+            self.epsilon_func = numba.njit(lambda n, m: np.float64(epsilon))
+        elif callable(epsilon):
+            self.epsilon_func = numba.njit(epsilon)
+        else:
+            raise ValueError(f'Unknown type of epsilon: {type(epsilon)}')
+        self.set_neighbor_list()  # Reset neighbor list since particle may have new interaction range.
 
     def scale_box(self, scale_factor: float):
         """ Scale box vectors and positions
