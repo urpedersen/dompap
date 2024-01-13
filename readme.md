@@ -1,4 +1,4 @@
-![dompap logo](dompap_logo.png)
+![dompap logo](dompap_logo_80x80.png)
 
 # The dompap simulation package 
 Simulations of particles in any dimensions with any pair potential.
