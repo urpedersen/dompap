@@ -13,11 +13,12 @@ and sympy for easy implementation of new potentials.
 Clone the repository from github at https://github.com/urpedersen/dompap.git 
 (into a working directory of your choice), and add the package to your python path.
 ```bash
-# Clone repository
+# Clone repository into some directory (replace [dir])
+cd [dir]
 git clone https://github.com/urpedersen/dompap.git
 
 # Add to python path
-export PYTHONPATH=$PYTHONPATH:./dompap
+export PYTHONPATH=$PYTHONPATH:[dir]/dompap
 ```
 
 ## Usage example
