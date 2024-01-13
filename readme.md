@@ -1,3 +1,5 @@
+![dompap logo](dompap_logo.png)
+
 # The dompap simulation package 
 Simulations of particles in any dimensions with any pair potential.
 The package uses Numpy, Numba for efficient calculations, 

@@ -106,7 +106,7 @@ def get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance, max_num
         for i in range(3 ** number_of_spatial_dimensions):
             # Get the cell index of the neighbor cell
             neighbor_cell_idx = cell_idx + np.unravel_index(i, (3,) * number_of_spatial_dimensions) - 1
-            # Apply periodic boundary conditions to cell idx
+            # Apply per½iodic boundary conditions to cell idx
             for d in range(number_of_spatial_dimensions):
                 if neighbor_cell_idx[d] < 0:
                     neighbor_cell_idx[d] += number_of_cells[d]
