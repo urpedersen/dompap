@@ -1,4 +1,4 @@
-![dompap logo](dompap_logo_80x80.png)
+![dompap logo](dompap_logo_160x160.png)
 
 # The dompap simulation package
 
