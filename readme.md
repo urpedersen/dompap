@@ -25,7 +25,7 @@ export PYTHONPATH=$PYTHONPATH:[dir]/dompap
 ## Usage example
 Below is an example of a 3D system of harmonic repulsive particles with the pair potential
 $$v(r) = (1 - r)^2$$
-where $r$ is the distance between two particles. The initial positions are set to a face-centered cubic (fcc) lattice,
+for $r<1$ and zero otherwise. The initial positions are set to a face-centered cubic (fcc) lattice,
 with five unit cells in each direction. 
 The simulation is run for 100 steps (constant $NVT$ with Langevin thermostat), and the potential energy is printed every 10 steps.
 
