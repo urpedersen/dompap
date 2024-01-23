@@ -1,5 +1,5 @@
 from dompap import Simulation
-from dompap import print_progress
+from dompap import progress_bar
 
 sim = Simulation()
 
@@ -11,7 +11,7 @@ stride = 20  # Stride between evaluations
 print(f'Evaluate properties every {stride} steps.', end='')
 for step in range(steps):
     if step % stride == 0:
-        print_progress(step, steps, stride)
+        progress_bar(step, steps, stride)
         ...  # Evaluate properties here
     sim.step()
-print_progress(steps, steps, stride, finalize=True)
+progress_bar(steps, steps, stride, finalize=True)

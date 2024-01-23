@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dompap import Simulation, print_progress, autotune
+from dompap import Simulation, progress_bar, autotune
 
 
 def run_simulation(sim, target_temperature=0.8, verbose=False):
@@ -36,7 +36,7 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
     for step in range(steps):
         if step % stride == 0:
             if verbose:
-                print_progress(step, steps, stride)
+                progress_bar(step, steps, stride)
             N = sim.get_number_of_particles()
             thermodynamic_data.append(
                 [sim.get_time(),
@@ -48,7 +48,7 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
         sim.step()
 
     if verbose:
-        print_progress(steps, steps, stride, finalize=True)
+        progress_bar(steps, steps, stride, finalize=True)
 
     # Convert data to pandas DataFrame
     columns = ['time', 'potential_energy', 'temperature', 'kinetic_energy', 'virial', 'pressure']

@@ -1,4 +1,4 @@
-def print_progress(current_step, total_num_steps, this_stride, finalize=False):
+def progress_bar(current_step, total_num_steps, this_stride, finalize=False):
     """Print progress bar to console. """
     from datetime import datetime
     print('\b' * 7, end='')  # Delete previous percent value

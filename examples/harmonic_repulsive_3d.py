@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from dompap import Simulation, autotune, print_progress
+from dompap import Simulation, autotune, progress_bar
 
 def plot_sim():
     global sim
@@ -65,10 +65,10 @@ stride = 40  # Stride between evaluations
 thermodynamic_data = []
 for step in range(steps):
     if step % stride == 0:
-        print_progress(step, steps, stride)
+        progress_bar(step, steps, stride)
         thermodynamic_data.append([sim.get_time(), sim.get_potential_energy(), sim.get_temperature(), sim.get_virial()])
     sim.step()
-print_progress(steps, steps, stride, finalize=True)
+progress_bar(steps, steps, stride, finalize=True)
 columns = ['time', 'potential_energy', 'temperature', 'virial']
 df = pd.DataFrame(data=thermodynamic_data, columns=columns)
 df['pressure'] = df['temperature'] * sim.get_density() + df['virial'] / sim.get_volume()
