@@ -1,3 +1,5 @@
+""" Progress bar during simulation. """
+
 from dompap import Simulation
 from dompap import progress_bar
 

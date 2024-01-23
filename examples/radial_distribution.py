@@ -1,3 +1,5 @@
+""" Calculate the radial distribution function at runtime """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd

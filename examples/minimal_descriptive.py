@@ -1,3 +1,5 @@
+""" Minimal descriptive example """
+
 from dompap import Simulation
 
 # Initialize simulation object

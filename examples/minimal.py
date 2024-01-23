@@ -1,3 +1,5 @@
+""" Minimal example of a (default) simulation """
+
 from dompap import Simulation
 
 # Setup default simulation

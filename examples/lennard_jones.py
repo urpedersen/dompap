@@ -1,4 +1,4 @@
-""" Example of a Lennard-Jones simulation. """
+""" Lennard-Jones simulation. """
 import numpy as np
 import matplotlib.pyplot as plt
 

@@ -1,3 +1,5 @@
+""" Load simulation data from disk. """
+
 from pprint import pprint
 
 from dompap import Simulation
