@@ -1,7 +1,8 @@
 from dompap import Simulation
 
 
-def autotune(sim: Simulation, steps=100, test_double_loop=True, smallest_skin=0.1, step_skin=0.1,
+def autotune(sim: Simulation, steps=100, test_double_loop=True, double_loop_single_core=True,
+             smallest_skin=0.1, step_skin=0.1,
              verbose=False, plot=False) -> Simulation:
     from time import perf_counter
 
@@ -77,7 +78,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, smallest_skin=0.
                   f'skin={sim_copy.neighbor_list_skin:0.4f}): '
                   f'{(toc - tic) * 1000:.3f} milliseconds')
 
-    # Test double loop method for force (no neighbor list)
+    # Test double loop method for force (multicore; no neighbor list)
     time_double_loop: float = None
     if test_double_loop:
         sim_copy = sim.copy()
@@ -90,12 +91,28 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, smallest_skin=0.
         if verbose:
             print(f'Time with double loop: {time_double_loop/steps*1000:0.4f} milliseconds')
         if time_double_loop < fastest_time:
+            fastest_time = time_double_loop
             sim.force_method_str = 'double loop'
             if verbose:
-                print('Using double loop method for force calculations.')
-        else:
+                print('Using double loop (multicore) method for force calculations (no neighbour list).')
+
+    # Test double loop single core method for force (no neighbor list)
+    time_double_loop_single_core: float = None
+    if double_loop_single_core:
+        sim_copy = sim.copy()
+        sim_copy.force_method_str = 'double loop single core'
+        sim_copy.step()  # Run one step to initialize
+        tic = perf_counter()
+        sim_copy.run(steps)
+        toc = perf_counter()
+        time_double_loop_single_core = toc - tic
+        if verbose:
+            print(f'Time with double loop single core: {time_double_loop_single_core/steps*1000:0.4f} milliseconds')
+        if time_double_loop_single_core < fastest_time:
+            fastest_time = time_double_loop_single_core
+            sim.force_method_str = 'double loop single core'
             if verbose:
-                print('Using neighbour list method for force calculations.')
+                print('Using double loop single core method for force calculations (no neighbour list).')
 
     # Make plot
     if plot:
