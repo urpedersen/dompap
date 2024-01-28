@@ -11,6 +11,7 @@
 * [minimal.py](minimal.py): Minimal example of a (default) simulation
 * [harmonic_repulsive_3d.py](harmonic_repulsive_3d.py): 3D harmonic repulsive system.
 * [simulation_to_disk.py](simulation_to_disk.py): Save simulation data to disk.
+* [harmonic_repulsive_two_rods.py](harmonic_repulsive_two_rods.py): Two rods with harmonic repulsive potential in 1D.
 * [lammps_dump.py](lammps_dump.py): Generate a LAMMPS dump file.
 * [simulation_from_disk.py](simulation_from_disk.py): Load simulation data from disk.
 
