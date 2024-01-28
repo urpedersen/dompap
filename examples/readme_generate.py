@@ -13,7 +13,7 @@ def extract_description(file_path):
 
 def generate(directory):
     readme_content = "# List of Examples\n\n"
-    for filename in os.listdir(directory):
+    for filename in sorted(os.listdir(directory)):
         if filename.endswith('.py') and filename != 'readme_generate.py':
             description = extract_description(os.path.join(directory, filename))
             if description:
