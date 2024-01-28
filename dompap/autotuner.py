@@ -93,8 +93,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True,
         if time_double_loop < fastest_time:
             fastest_time = time_double_loop
             sim.force_method_str = 'double loop'
-            if verbose:
-                print('Using double loop (multicore) method for force calculations (no neighbour list).')
+
 
     # Test double loop single core method for force (no neighbor list)
     time_double_loop_single_core: float = None
@@ -111,8 +110,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True,
         if time_double_loop_single_core < fastest_time:
             fastest_time = time_double_loop_single_core
             sim.force_method_str = 'double loop single core'
-            if verbose:
-                print('Using double loop single core method for force calculations (no neighbour list).')
+
 
     # Test vectorized method for force (NumPy, no Numba)
     if test_double_loop:
@@ -128,8 +126,10 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True,
         if time_vectorized < fastest_time:
             fastest_time = time_vectorized
             sim.force_method_str = 'vectorized'
-            if verbose:
-                print('Using vectorized method for force calculations (no neighbour list).')
+
+    if verbose:
+        print(f'Fastest method: {sim.force_method_str}')
+
 
     # Make plot
     if plot:
