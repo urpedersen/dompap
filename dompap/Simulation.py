@@ -101,7 +101,7 @@ class Simulation:
     energy_method_str = 'neighbor list'
     force_method_str = 'neighbor list'
     neighbor_list_method_str = 'double loop'
-    _KNOWN_ENERGY_METHODS = {'neighbor list', 'double loop'}
+    _KNOWN_ENERGY_METHODS = {'neighbor list', 'double loop', 'double loop single core'}
     _KNOWN_FORCE_METHODS = {'neighbor list', 'double loop', 'double loop single core', 'vectorized'}
     _KNOWN_CELL_LIST_METHODS = {'cell list', 'double loop'}
 
@@ -202,7 +202,7 @@ class Simulation:
          [1.]]
         """
         # If type is float, set all masses to the same value
-        if isinstance(masses, float):
+        if isinstance(masses, float) or isinstance(masses, int):
             self.masses = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(masses)
         # If type is list, set masses to the values in the list
         elif isinstance(masses, list):
@@ -412,6 +412,11 @@ class Simulation:
             from .potential import _get_total_energy_double_loop
             energy = _get_total_energy_double_loop(self.positions, self.box_vectors, self.pair_potential,
                                                    self.sigma_func, self.epsilon_func)
+            return float(energy)
+        elif self.energy_method_str == 'double loop single core':
+            from .potential import _get_total_energy_double_loop_single_core
+            energy = _get_total_energy_double_loop_single_core(self.positions, self.box_vectors, self.pair_potential,
+                                                               self.sigma_func, self.epsilon_func)
             return float(energy)
 
     def get_forces(self) -> np.ndarray:
