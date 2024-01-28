@@ -1,3 +1,6 @@
+from functools import lru_cache
+from time import perf_counter
+
 import matplotlib.pyplot as plt
 import numba
 import numpy
@@ -305,6 +308,50 @@ def _get_virial_double_loop(positions: np.ndarray,
             virial += scalar_force * distance
     return numpy.float64(virial / dimension_of_space)
 
+@lru_cache
+def from_func_to_array(func: callable, num_particles: int, dtype=np.float64) -> np.ndarray:
+    """ Convert a function to an array by evaluating it at all combinations of indices """
+    # Initialize an empty array of the desired shape
+    array = np.empty((num_particles, num_particles), dtype=dtype)
+
+    # Iterate over all combinations of indices
+    for i in range(num_particles):
+        for j in range(num_particles):
+            array[i, j] = func(i, j)
+
+    return array
+def test_from_func_to_array():
+    def func(n, m):
+        if n == m:
+            return 1.0
+        else:
+            return 2.0
+    num_particles = 3
+    array = from_func_to_array(func, num_particles)
+    expected = np.array([[1., 2., 2.], [2., 1., 2.], [2., 2., 1.]])
+    assert np.allclose(array, expected)
+
+def test_if_cache_works(verbose=False):
+    """ Test that cache works """
+    def func(n, m):
+        if n == m:
+            return 1.0
+        else:
+            return 2.0
+    num_particles = 4
+    tic = perf_counter()
+    array1 = from_func_to_array(func, num_particles)
+    toc = perf_counter()
+    time_first_call = toc - tic
+    tic = perf_counter()
+    array2 = from_func_to_array(func, num_particles)
+    toc = perf_counter()
+    time_second_call = toc - tic
+    if verbose:
+        print(f'\n    Time first call: {time_first_call*1e6} microseconds\n')
+        print(f'\n    Time second call: {time_second_call*1e6} microseconds\n')
+    assert time_second_call < time_first_call
+    assert np.allclose(array1, array2)
 
 def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func):
     """ Get forces on all particles using vectorized operations.
@@ -319,8 +366,8 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
                                                    displacement_vectors[:, :, dim])
     distances = np.sum(displacement_vectors ** 2, axis=2) ** 0.5
     np.fill_diagonal(distances, np.inf)  # Set diagonal to infinity to avoid division by zero
-    sigmas = sigma_func(np.arange(positions.shape[0]), np.arange(positions.shape[0])[:, np.newaxis])
-    epsilons = epsilon_func(np.arange(positions.shape[0]), np.arange(positions.shape[0])[:, np.newaxis])
+    sigmas = from_func_to_array(sigma_func, positions.shape[0])
+    epsilons = from_func_to_array(epsilon_func, positions.shape[0])
     scalar_forces = epsilons * pair_force(distances / sigmas)
     unit_vectors = displacement_vectors / distances[:, :, np.newaxis]
     forces = np.sum(scalar_forces[:, :, np.newaxis] * unit_vectors, axis=1)
@@ -334,3 +381,39 @@ def test_get_forces_vectorized():
     epsilon_func = numba.njit(lambda n, m: np.float64(4))
     forces = _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func)
     assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
+
+def test_sigma_and_epsilon_functions():
+    """ Test that sigma_func and epsilon_func can be more complex functions """
+    # Include four particles
+    positions = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0]], dtype=np.float64)
+    box_vectors = np.array([3, 3, 3], dtype=np.float64)
+    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+
+    # Make everybody neighbors
+    neighbor_list = np.array([[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]], dtype=np.int32)
+
+    @numba.njit
+    def sigma_func(n, m):
+        if n == m:
+            return np.float64(1)
+        else:
+            return np.float64(2)
+
+    @numba.njit
+    def epsilon_func(n, m):
+        if n == m:
+            return np.float64(1)
+        else:
+            return np.float64(4)
+
+    F_expected = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
+
+    list_of_other_funcs = [
+        _get_forces_double_loop_single_core,
+        _get_forces_double_loop,
+        _get_forces_vectorized
+    ]
+    for other_func in list_of_other_funcs:
+        F_other = other_func(positions, box_vectors, pair_force, sigma_func, epsilon_func)
+        assert np.allclose(F_expected, F_other)
+
