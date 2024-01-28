@@ -1,7 +1,7 @@
 from dompap import Simulation
 
 
-def autotune(sim: Simulation, steps=100, test_double_loop=True, double_loop_single_core=True,
+def autotune(sim: Simulation, steps=100, test_double_loop=True,
              smallest_skin=0.1, step_skin=0.1,
              verbose=False, plot=False) -> Simulation:
     from time import perf_counter
@@ -98,7 +98,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, double_loop_sing
 
     # Test double loop single core method for force (no neighbor list)
     time_double_loop_single_core: float = None
-    if double_loop_single_core:
+    if test_double_loop:
         sim_copy = sim.copy()
         sim_copy.force_method_str = 'double loop single core'
         sim_copy.step()  # Run one step to initialize
@@ -113,6 +113,23 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, double_loop_sing
             sim.force_method_str = 'double loop single core'
             if verbose:
                 print('Using double loop single core method for force calculations (no neighbour list).')
+
+    # Test vectorized method for force (NumPy, no Numba)
+    if test_double_loop:
+        sim_copy = sim.copy()
+        sim_copy.force_method_str = 'vectorized'
+        sim_copy.step()  # Run one step to initialize
+        tic = perf_counter()
+        sim_copy.run(steps)
+        toc = perf_counter()
+        time_vectorized = toc - tic
+        if verbose:
+            print(f'Time with vectorized: {time_vectorized/steps*1000:0.4f} milliseconds')
+        if time_vectorized < fastest_time:
+            fastest_time = time_vectorized
+            sim.force_method_str = 'vectorized'
+            if verbose:
+                print('Using vectorized method for force calculations (no neighbour list).')
 
     # Make plot
     if plot:
@@ -130,7 +147,7 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True, double_loop_sing
     return sim
 
 
-def test_autotune(verbose=False, plot=False):
+def test_autotune(verbose=False, plot=False, test_double_loop=True):
     # Setup Lennard-Jones simulation
     sim = Simulation()
     fcc_unit_cell = (
@@ -149,9 +166,9 @@ def test_autotune(verbose=False, plot=False):
     sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
     sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=512)
 
-    sim = autotune(sim, verbose=verbose, plot=plot)
+    sim = autotune(sim, verbose=verbose, plot=plot, test_double_loop=test_double_loop)
     assert 0.3 < sim.neighbor_list_skin < 1.7, f'{sim.neighbor_list_skin=}'
 
 
 if __name__ == '__main__':
-    test_autotune(verbose=True, plot=True)
+    test_autotune(verbose=True, plot=True, test_double_loop=True)

@@ -307,5 +307,30 @@ def _get_virial_double_loop(positions: np.ndarray,
 
 
 def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func):
-    """ Get forces on all particles using vectorized operations """
-    raise NotImplementedError
+    """ Get forces on all particles using vectorized operations.
+    This implementation uses only NumPy, no Numba. """
+    displacement_vectors = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+    for dim in range(positions.shape[1]):
+        displacement_vectors[:, :, dim] = np.where(displacement_vectors[:, :, dim] > box_vectors[dim] / 2,
+                                                   displacement_vectors[:, :, dim] - box_vectors[dim],
+                                                   displacement_vectors[:, :, dim])
+        displacement_vectors[:, :, dim] = np.where(displacement_vectors[:, :, dim] < -box_vectors[dim] / 2,
+                                                   displacement_vectors[:, :, dim] + box_vectors[dim],
+                                                   displacement_vectors[:, :, dim])
+    distances = np.sum(displacement_vectors ** 2, axis=2) ** 0.5
+    np.fill_diagonal(distances, np.inf)  # Set diagonal to infinity to avoid division by zero
+    sigmas = sigma_func(np.arange(positions.shape[0]), np.arange(positions.shape[0])[:, np.newaxis])
+    epsilons = epsilon_func(np.arange(positions.shape[0]), np.arange(positions.shape[0])[:, np.newaxis])
+    scalar_forces = epsilons * pair_force(distances / sigmas)
+    unit_vectors = displacement_vectors / distances[:, :, np.newaxis]
+    forces = np.sum(scalar_forces[:, :, np.newaxis] * unit_vectors, axis=1)
+    return forces
+
+def test_get_forces_vectorized():
+    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
+    box_vectors = np.array([3, 3, 3], dtype=np.float64)
+    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+    sigma_func = numba.njit(lambda n, m: np.float64(2))
+    epsilon_func = numba.njit(lambda n, m: np.float64(4))
+    forces = _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func)
+    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
