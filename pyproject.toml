@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dompap"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
     "numpy>=1.24",
     "scipy>=1.10",
@@ -21,9 +21,11 @@ maintainers = [{name="Ulf R. Pedersen", email="urp@ruc.dk"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 classifiers = [
     "License :: GNU LGPLv3",
-    "Programming Language :: Python"
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
 ]
 
 [project.urls]
+Homepage = "https://github.com/urpedersen/dompap"
 Repository = "https://github.com/urpedersen/dompap"
 Issues = "https://github.com/urpedersen/dompap/issues"
