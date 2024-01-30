@@ -7,7 +7,7 @@ import numpy
 import numpy as np
 import sympy as sp
 
-from .positions import get_distance, get_displacement_vector
+from dompap.positions import get_displacement_vector
 
 
 @numba.njit
