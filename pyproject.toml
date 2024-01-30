@@ -20,7 +20,8 @@ authors = [{name="Ulf R. Pedersen", email="urp@ruc.dk"}]
 maintainers = [{name="Ulf R. Pedersen", email="urp@ruc.dk"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 classifiers = [
-    "License :: GNU GPLv3",
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
