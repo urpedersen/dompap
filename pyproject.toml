@@ -7,11 +7,11 @@ name = "dompap"
 version = "0.0.1"
 dependencies = [
     "numpy>=1.24",
-    "scipy>=1.10",
+    "sympy>=1.12",
     "matplotlib>=3.6",
     "pandas>=1.5",
     "numba>=0.58",
-    "toml"
+    "toml>=0.10"
 ]
 requires-python = ">= 3.11"
 description = "Simulations of point-like particles in any dimension with any pair potential"
