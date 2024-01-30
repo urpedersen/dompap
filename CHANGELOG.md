@@ -25,3 +25,10 @@ Bugfix:
 ## Version 0.0.3
 Bugfix:
 * `scipy` was missing from  requirements
+
+## Version 0.0.4
+Allow python 3.10 and newer.
+
+## Version 0.0.4
+Bugfix:
+* autotuner was verbose when it should be silent.
