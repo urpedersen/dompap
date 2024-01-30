@@ -30,14 +30,15 @@ def autotune(sim: Simulation, steps=100, test_double_loop=True,
     sim.neighbor_list_method_str = fastest_method
     sim_copy.neighbor_list_method_str = fastest_method
 
-    largest_allowd_skin = min(sim.box_vectors) / 2
-    print(f'{largest_allowd_skin=}')
+    largest_allowed_skin = min(sim.box_vectors) / 2
+    if verbose:
+        print(f'{largest_allowed_skin=}')
     skins = []
     times = []
     neighbor_list_updates = []
     skin = smallest_skin
     old_time = float('inf')
-    while skin < largest_allowd_skin:
+    while skin < largest_allowed_skin:
         old_num_updates = sim_copy.number_of_neighbor_list_updates
         sim_copy.set_neighbor_list(skin=skin)
         tic = perf_counter()
