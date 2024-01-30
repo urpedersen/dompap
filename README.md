@@ -76,4 +76,4 @@ Energy after 70 steps: 61.752276744879524
 Energy after 80 steps: 67.33278804505039
 Energy after 90 steps: 72.00507120397305
 ```
-See [examples](examples) for more examples of the capabilities of the `dompap` package.
+See [examples](https://github.com/urpedersen/dompap/tree/master/examples) for more examples of the capabilities of the `dompap` package.
