@@ -25,6 +25,14 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
+    "Environment :: GPU",
+    'Framework :: Jupyter',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Education',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Chemistry',
+    'Topic :: Scientific/Engineering :: Astronomy',
+    'Topic :: Scientific/Engineering :: Physics',
 ]
 
 [project.urls]
