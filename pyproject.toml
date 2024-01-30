@@ -14,7 +14,7 @@ dependencies = [
     "numba>=0.58",
     "toml>=0.10"
 ]
-requires-python = ">= 3.11"
+requires-python = ">= 3.10"
 description = "Simulations of point-like particles in any dimension with any pair potential"
 keywords = ["molecular dynamics", "particle simulation", "Lennard-Jones", "soft sphere", "harmonic repulsive"]
 authors = [{name="Ulf R. Pedersen", email="urp@ruc.dk"}]
