@@ -22,6 +22,9 @@ git clone https://github.com/urpedersen/dompap.git
 
 # Add to python path
 export PYTHONPATH=$PYTHONPATH:[dir]/dompap
+
+# Install requirements
+pip install -r ./dompap/requirements.txt
 ```
 
 
