@@ -4,9 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dompap"
-version = "0.0.1"
+version = "0.0.3"
 dependencies = [
     "numpy>=1.24",
+    "scipy>=1.10",
     "sympy>=1.12",
     "matplotlib>=3.6",
     "pandas>=1.5",
@@ -30,3 +31,4 @@ classifiers = [
 Homepage = "https://github.com/urpedersen/dompap"
 Repository = "https://github.com/urpedersen/dompap"
 Issues = "https://github.com/urpedersen/dompap/issues"
+Changelog = "https://github.com/urpedersen/dompap/blob/master/CHANGELOG.md"

@@ -1,5 +1,3 @@
-![dompap logo](dompap_logo_160x160.png)
-
 # The dompap simulation package
 
 The `dompap` package focuses on simulations of point-like particles in any dimension with any pair potential.
@@ -9,6 +7,14 @@ The user is not expected to be familiar with these packages but only basic Pytho
 *Ulf R. Pedersen, 2024*
 
 ## Installation
+
+### Use the Python package index (PyPI)
+The package can be installed from the Python package index (PyPI) using pip.
+```bash
+pip install dompap
+```
+
+### Download source from GitHub
 Clone the repository from github at https://github.com/urpedersen/dompap.git 
 (into a working directory of your choice), and add the package to your python path.
 ```bash
@@ -19,6 +25,7 @@ git clone https://github.com/urpedersen/dompap.git
 # Add to python path
 export PYTHONPATH=$PYTHONPATH:[dir]/dompap
 ```
+
 
 ## Usage example
 Below is an example of a 3D system of harmonic repulsive particles with the pair potential
