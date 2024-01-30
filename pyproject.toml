@@ -29,6 +29,6 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/urpedersen/dompap"
-Repository = "https://github.com/urpedersen/dompap"
 Issues = "https://github.com/urpedersen/dompap/issues"
+Repository = "https://github.com/urpedersen/dompap"
 Changelog = "https://github.com/urpedersen/dompap/blob/master/CHANGELOG.md"
