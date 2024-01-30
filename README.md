@@ -6,8 +6,6 @@ The `dompap` package focuses on simulations of point-like particles in any dimen
 The package uses NumPy and Numba for efficient calculations and SymPy to implement any pair potentials. 
 The user is not expected to be familiar with these packages but only basic Python syntax.
 
-**This package is a work in progress, and not yet ready for use.**
-
 *Ulf R. Pedersen, 2024*
 
 ## Installation
