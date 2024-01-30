@@ -21,12 +21,11 @@ cd [dir]
 git clone https://github.com/urpedersen/dompap.git
 
 # Add to python path
-export PYTHONPATH=$PYTHONPATH:[dir]/dompap
+export PYTHONPATH=$PYTHONPATH:$PWD/dompap
 
 # Install requirements
 pip install -r ./dompap/requirements.txt
 ```
-
 
 ## Usage example
 Below is an example of a 3D system of harmonic repulsive particles with the pair potential
