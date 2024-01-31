@@ -28,6 +28,7 @@ pip install -r ./dompap/requirements.txt
 ```
 
 ## Usage example
+### Python script
 Below is an example of a 3D system of harmonic repulsive particles with the pair potential
 $$v(r) = (1 - r)^2$$
 for $r<1$ and zero otherwise. The initial positions are set to a face-centered cubic (fcc) lattice,
@@ -84,3 +85,10 @@ Energy after 80 steps: 67.33278804505039
 Energy after 90 steps: 72.00507120397305
 ```
 See [examples](https://github.com/urpedersen/dompap/tree/master/examples) for more examples of the capabilities of the `dompap` package.
+
+### Use dompap from the command line
+The `dompap` package can also be used from the command line limited functionality.
+Type `dompap --help` for more information and to see the available options:
+```bash
+python3 -m dompap --help
+```
