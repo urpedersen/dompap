@@ -20,7 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dompap import Simulation, progress_bar, autotune
+from dompap import Simulation, autotune
+from dompap.tools import progress_bar
 
 
 def run_simulation(sim, target_temperature=0.8, verbose=False):

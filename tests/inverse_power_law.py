@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from dompap import Simulation
-from dompap import progress_bar
+from dompap.tools import progress_bar
 import dompap
 
 
