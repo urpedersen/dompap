@@ -1,20 +1,35 @@
-""" Inverse power law pair potential """
+""" Compare to values in [J. Chem. Phys. 139, 104102 (2013); https://doi.org/10.1063/1.4818747].
+Simulation of the Lennard-Jones crystal truncated at 2.5 sigma.
 
-import numpy as np
+Values from Table I in the paper, crystal at coexistence state-point:
+
+Temperature: 0.800
+Pressure: 2.185
+
+[Crystal]
+Specific volume: 1.0277
+Energy per particle: −4.953
+
+[Liquid]
+Specific volume: 1.1360
+Energy per particle: −4.075
+
+"""
+
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
-from dompap import Simulation
+from dompap import Simulation, autotune
 from dompap.tools import progress_bar
-import dompap
 
 
 def run_simulation(sim, target_temperature=0.8, verbose=False):
-    sim.set_integrator(time_step=0.004, target_temperature=target_temperature, temperature_damping_time=2.0)
+    sim.set_integrator(time_step=0.004, target_temperature=target_temperature, temperature_damping_time=0.1)
 
     # Set simulation parameters
-    steps = 400  # Number of steps to run
-    number_of_evaluations = 100  # Number of evaluations
+    steps = 40  # Number of steps to run
+    number_of_evaluations = 10  # Number of evaluations
     stride = steps // number_of_evaluations  # Stride between evaluations
 
     # Run simulation
@@ -31,12 +46,6 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
                  sim.get_kinetic_energy() / N,
                  sim.get_virial() / N,
                  sim.get_pressure()])
-        if sim.get_virial() < -0.1:
-            r = sim.get_positions()
-            W = sim.get_virial()
-            print(f'{W=}')
-            F = sim.get_forces()
-            ...
         sim.step()
 
     if verbose:
@@ -55,7 +64,7 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
     return sim, df
 
 
-def test_inverse_power_law(verbose=False, plot=False):
+def test_lennard_jones_crystal(verbose=False, plot=False):
     # Setup Lennard-Jones simulation
     sim = Simulation()
     fcc_unit_cell = np.array([
@@ -65,40 +74,24 @@ def test_inverse_power_law(verbose=False, plot=False):
         (0.0, 0.5, 0.5)
     ], dtype=np.float64)
     sim.set_positions(unit_cell_coordinates=fcc_unit_cell, cells=(6, 6, 6))
-    density = 0.7
+    specific_volume = 1.0277
+    density = 1.0 / specific_volume
     if verbose:
         print(f'Density: {density}')
     sim.set_density(density=density)
     sim.set_masses(masses=1.0)
     sim.set_particle_types(types=0)
-    sim.set_random_velocities(temperature=1.0)
-    sim.set_pair_potential(pair_potential_str='r**-12', r_cut=2.0)
+    sim.set_random_velocities(temperature=0.8 * 2)
+    sim.set_pair_potential(pair_potential_str='4*(r**-12-r**-6)', r_cut=2.5)
     sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
     sim.set_neighbor_list(skin=1.2, max_number_of_neighbors=512)
-    sim.set_integrator(time_step=0.004, target_temperature=1.0, temperature_damping_time=2.0)
+    sim.set_integrator(time_step=0.004, target_temperature=0.8, temperature_damping_time=2.0)
     # sim.force_method_str = 'double loop'
     # sim.energy_method_str = 'double loop'
-    # sim = dompap.autotune(sim, verbose=verbose)
-
-    if plot:
-        # Plot pair potential
-        r = np.linspace(0.5, 2.5, 1000)
-        plt.figure(figsize=(4, 6))
-        plt.subplot(2, 1, 1)
-        plt.plot(r, sim.pair_potential(r))
-        plt.xlabel('r')
-        plt.ylabel('Pair potential, v(r)')
-        plt.ylim(0, 2)
-        plt.subplot(2, 1, 2)
-        # Plot pair force
-        plt.plot(r, sim.pair_force(r))
-        plt.xlabel('r')
-        plt.ylabel('Pair force, f(r)')
-        plt.ylim(-1, 1.2)
-        plt.show()
+    # sim = autotune(sim, verbose=verbose)
 
     if verbose:
-        print(f'Equilibrate')
+        print(f'Equilibrate crystal')
     sim, _ = run_simulation(sim, verbose=verbose)  # Equilibrate
     if verbose:
         print(f'Production run')
@@ -112,19 +105,29 @@ def test_inverse_power_law(verbose=False, plot=False):
     print(f'{sim.get_volume()=}')
     print(f'{sim.get_number_of_particles()=}')
 
-    # Assert correlation between virial and potential energy
-    x = df['potential_energy']
-    y = df['virial']
-    slope = np.cov(x, y)[0, 1] / np.var(x)
-    intersection = np.mean(y) - slope * np.mean(x)
-    corr_coef = np.corrcoef(x, y)[0, 1]
-    expected_slope = 4
-    expected_intersection = 0
-    expected_corr_coef = 1
-    tolerance = 0.1
-    assert expected_slope - tolerance < slope < expected_slope + tolerance, f'{slope=}'
-    assert expected_intersection - tolerance < intersection < expected_intersection + tolerance, f'{intersection=}'
-    assert expected_corr_coef - tolerance < corr_coef < expected_corr_coef + tolerance, f'{corr_coef=}'
+    average_kinetic_energy = df['kinetic_energy'].mean()
+    expected_kinetic_energy = 0.8 * 3 / 2
+    tolerance = 0.1 * expected_kinetic_energy
+    print(f'{average_kinetic_energy=} {expected_kinetic_energy=}')
+    assert expected_kinetic_energy - tolerance < average_kinetic_energy < expected_kinetic_energy + tolerance
+
+    average_pressure = df['pressure'].mean()
+    expected_pressure = 2.185
+    tolerance = 0.1 * expected_pressure
+    print(f'{average_pressure=} {expected_pressure=}')
+    assert expected_pressure - tolerance < average_pressure < expected_pressure + tolerance
+
+    average_potential_energy = df['potential_energy'].mean()
+    expected_potential_energy = -4.953 - 0.8 * 3 / 2
+    tolerance = 0.5
+    print(f'{average_potential_energy=} {expected_potential_energy=}')
+    assert expected_potential_energy - tolerance < average_potential_energy < expected_potential_energy + tolerance
+
+    average_energy = df['potential_energy'].mean() + df['kinetic_energy'].mean()
+    expected_energy = -4.953
+    tolerance = 0.5
+    print(f'{average_energy=} {expected_energy=}')
+    assert expected_energy - tolerance < average_energy < expected_energy + tolerance
 
     if plot:
         # Plot positions
@@ -135,7 +138,13 @@ def test_inverse_power_law(verbose=False, plot=False):
 
         # Virial versus potential energy
         plt.figure(figsize=(4, 4))
+        x = df['potential_energy']
+        y = df['virial']
         plt.plot(x, y, '.')
+        # Linear fit
+        slope = np.cov(x, y)[0, 1] / np.var(x)
+        intersection = np.mean(y) - slope * np.mean(x)
+        corr_coef = np.corrcoef(x, y)[0, 1]
         plt.plot([min(x), max(x)],
                  [slope * min(x) + intersection, slope * max(x) + intersection],
                  '-')  # y = ax + b
@@ -164,4 +173,4 @@ def test_inverse_power_law(verbose=False, plot=False):
 
 
 if __name__ == '__main__':
-    test_inverse_power_law(verbose=True, plot=True)
+    test_lennard_jones_crystal(verbose=True, plot=True)
