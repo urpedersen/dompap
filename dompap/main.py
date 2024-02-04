@@ -29,7 +29,7 @@ def main(argv):
 
     # Run test simulation
     if '-t' in argv or '--test' in argv:
-        from dompap import run_test_simulation
+        from dompap.tools import run_test_simulation
         run_test_simulation(verbose=verbose)
         sys.exit()
 

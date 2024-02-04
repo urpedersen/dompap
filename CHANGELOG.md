@@ -32,6 +32,7 @@ Allow python 3.10 and newer.
 ## Version 0.0.5
 New features:
 * Run dompap from commandline with something like `python -m dompap` (limited functionality)
+* Restructure namespace, now tools are in `dompap.tools`.
 
 Bugfix:
 * autotuner was verbose when it should be silent.
