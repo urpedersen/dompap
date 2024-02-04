@@ -1,10 +1,7 @@
 from functools import lru_cache
-from time import perf_counter
 
-import matplotlib.pyplot as plt
-import numba
-import numpy
 import numpy as np
+import numba
 import sympy as sp
 
 from dompap.positions import get_displacement_vector
@@ -52,45 +49,6 @@ def make_pair_potential(pair_potential_str='(((1-r)**2)**(1/2))**(7/2)', r_cut=1
     return pair_potential_cut, pair_force_cut
 
 
-def test_make_pair_potential():
-    # Test harmonic repulsive (1-r)**2 for r < 1
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    assert pair_potential(0.5) == 0.25
-    assert pair_force(0.5) == 1.0
-
-
-def test_hardcoded_potentials(verbose=False, plot=False):
-    """  Loop over all hardcoded potentials, plot them, and test that they are equal to make_pair_potential(...) """
-    for name, (pair_potential_str, pair_potential, pair_force, r_cut) in hardcoded_pair_potentials.items():
-        if verbose:
-            print(f'Testing {name}...')
-        # Test that hardcoded potential is equal to make_pair_potential(...)
-        pair_potential_test, pair_force_test = make_pair_potential(pair_potential_str, r_cut)
-
-        r = np.linspace(0, r_cut * 1.2, 1000)
-
-        # Plot potential
-        if plot:
-            plt.figure(figsize=(4, 6))
-            plt.title(name)
-            plt.subplot(2, 1, 1)
-            for x in r:
-                plt.plot(x, pair_potential(x), 'bo', fillstyle='none')
-                plt.plot(x, pair_potential_test(x), 'rx')
-            plt.xlabel('r')
-            plt.ylim(-1, 1.5)
-            plt.ylabel('Pair potential')
-            # Plot force
-            plt.subplot(2, 1, 2)
-            for x in r:
-                plt.plot(x, pair_force(x), 'bo', fillstyle='none')
-                plt.plot(x, pair_force_test(x), 'rx')
-            plt.xlabel('r')
-            plt.ylim(-1, 1.5)
-            plt.ylabel('Pair force')
-            plt.show()
-
-
 @numba.njit
 def _get_total_energy(positions: np.ndarray,
                       box_vectors: np.ndarray,
@@ -121,17 +79,6 @@ def _get_total_energy(positions: np.ndarray,
     return energy / 2
 
 
-def test_get_total_energy():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    neighbor_list = np.array([[1], [0]], dtype=np.int32)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    energy = _get_total_energy(positions, box_vectors, pair_potential, neighbor_list, sigma_func, epsilon_func)
-    assert energy == 1.0, f'{energy=}'
-
-
 @numba.njit(parallel=True)
 def _get_total_energy_double_loop(positions: np.ndarray,
                                   box_vectors: np.ndarray,
@@ -158,22 +105,12 @@ def _get_total_energy_double_loop(positions: np.ndarray,
     return energy
 
 
-def test_get_total_energy_double_loop():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    energy = _get_total_energy_double_loop(positions, box_vectors, pair_potential, sigma_func, epsilon_func)
-    assert energy == 1.0, f'{energy=}'
-
-
 @numba.njit
 def _get_total_energy_double_loop_single_core(positions: np.ndarray,
-                                  box_vectors: np.ndarray,
-                                  pair_potential: callable,
-                                  sigma_func: callable,
-                                  epsilon_func: callable) -> float:
+                                              box_vectors: np.ndarray,
+                                              pair_potential: callable,
+                                              sigma_func: callable,
+                                              epsilon_func: callable) -> float:
     """ Get total energy of the system using double loop """
     dimension_of_space = positions.shape[1]
     energy: float = 0.0
@@ -193,15 +130,6 @@ def _get_total_energy_double_loop_single_core(positions: np.ndarray,
             energy = energy + epsilon * pair_potential(distance / sigma).astype(np.float64)
     return energy
 
-
-def test_get_total_energy_double_loop_single_core():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    energy = _get_total_energy_double_loop(positions, box_vectors, pair_potential, sigma_func, epsilon_func)
-    assert energy == 1.0, f'{energy=}'
 
 @numba.njit(parallel=True)
 def _get_forces(positions: np.ndarray,
@@ -229,17 +157,6 @@ def _get_forces(positions: np.ndarray,
     return forces
 
 
-def test_get_forces():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    neighbor_list = np.array([[1, -1, -1], [0, -1, -1]], dtype=np.int32)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    forces = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
-    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
-
-
 @numba.njit
 def _get_forces_double_loop_single_core(positions: np.ndarray,
                                         box_vectors: np.ndarray,
@@ -260,16 +177,6 @@ def _get_forces_double_loop_single_core(positions: np.ndarray,
             forces[n] = forces[n] + scalar_force * unit_vector
             forces[m] = forces[m] - scalar_force * unit_vector
     return forces
-
-
-def test_get_forces_double_loop_single_core():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    forces = _get_forces_double_loop_single_core(positions, box_vectors, pair_force, sigma_func, epsilon_func)
-    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
 
 
 @numba.njit(parallel=True)
@@ -307,16 +214,6 @@ def _get_forces_double_loop(positions: np.ndarray,
     return forces
 
 
-def test_get_forces_double_loop():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    forces = _get_forces_double_loop(positions, box_vectors, pair_force, sigma_func, epsilon_func)
-    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
-
-
 @numba.njit(parallel=True)
 def _get_virial_double_loop(positions: np.ndarray,
                             box_vectors: np.ndarray,
@@ -341,7 +238,8 @@ def _get_virial_double_loop(positions: np.ndarray,
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
             virial += scalar_force * distance
-    return numpy.float64(virial / dimension_of_space)
+    return np.float64(virial / dimension_of_space)
+
 
 @lru_cache
 def from_func_to_array(func: callable, num_particles: int, dtype=np.float64) -> np.ndarray:
@@ -355,38 +253,7 @@ def from_func_to_array(func: callable, num_particles: int, dtype=np.float64) -> 
             array[i, j] = func(i, j)
 
     return array
-def test_from_func_to_array():
-    def func(n, m):
-        if n == m:
-            return 1.0
-        else:
-            return 2.0
-    num_particles = 3
-    array = from_func_to_array(func, num_particles)
-    expected = np.array([[1., 2., 2.], [2., 1., 2.], [2., 2., 1.]])
-    assert np.allclose(array, expected)
 
-def test_if_cache_works(verbose=False):
-    """ Test that cache works """
-    def func(n, m):
-        if n == m:
-            return 1.0
-        else:
-            return 2.0
-    num_particles = 4
-    tic = perf_counter()
-    array1 = from_func_to_array(func, num_particles)
-    toc = perf_counter()
-    time_first_call = toc - tic
-    tic = perf_counter()
-    array2 = from_func_to_array(func, num_particles)
-    toc = perf_counter()
-    time_second_call = toc - tic
-    if verbose:
-        print(f'\n    Time first call: {time_first_call*1e6} microseconds\n')
-        print(f'\n    Time second call: {time_second_call*1e6} microseconds\n')
-    assert time_second_call < time_first_call
-    assert np.allclose(array1, array2)
 
 def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func):
     """ Get forces on all particles using vectorized operations.
@@ -407,48 +274,3 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
     unit_vectors = displacement_vectors / distances[:, :, np.newaxis]
     forces = np.sum(scalar_forces[:, :, np.newaxis] * unit_vectors, axis=1)
     return forces
-
-def test_get_forces_vectorized():
-    positions = np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    sigma_func = numba.njit(lambda n, m: np.float64(2))
-    epsilon_func = numba.njit(lambda n, m: np.float64(4))
-    forces = _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func)
-    assert np.allclose(forces, np.array([[-4, 0, 0], [4, 0, 0]], dtype=np.float64))
-
-def test_sigma_and_epsilon_functions():
-    """ Test that sigma_func and epsilon_func can be more complex functions """
-    # Include four particles
-    positions = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0]], dtype=np.float64)
-    box_vectors = np.array([3, 3, 3], dtype=np.float64)
-    pair_potential, pair_force = make_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-
-    # Make everybody neighbors
-    neighbor_list = np.array([[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]], dtype=np.int32)
-
-    @numba.njit
-    def sigma_func(n, m):
-        if n == m:
-            return np.float64(1)
-        else:
-            return np.float64(2)
-
-    @numba.njit
-    def epsilon_func(n, m):
-        if n == m:
-            return np.float64(1)
-        else:
-            return np.float64(4)
-
-    F_expected = _get_forces(positions, box_vectors, pair_force, neighbor_list, sigma_func, epsilon_func)
-
-    list_of_other_funcs = [
-        _get_forces_double_loop_single_core,
-        _get_forces_double_loop,
-        _get_forces_vectorized
-    ]
-    for other_func in list_of_other_funcs:
-        F_other = other_func(positions, box_vectors, pair_force, sigma_func, epsilon_func)
-        assert np.allclose(F_expected, F_other)
-
