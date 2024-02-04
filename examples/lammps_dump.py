@@ -1,6 +1,7 @@
 """ Generate a LAMMPS dump file. """
 
-from dompap import Simulation, to_lammps_dump
+from dompap import Simulation
+from dompap.tools import to_lammps_dump
 
 # Setup default simulation
 sim = Simulation()

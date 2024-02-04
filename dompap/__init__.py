@@ -9,6 +9,5 @@ The user is not expected to be familiar with these packages but only basic Pytho
 Repository: <https://github.com/urpedersen/dompap>
 """
 from .Simulation import Simulation
-from .to_lammps_dump import to_lammps_dump
 from .main import main
 from . import tools
