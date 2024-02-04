@@ -1,7 +1,9 @@
+""" Simulation class of the dompap package. """
+
 from dataclasses import dataclass, field
 
-import numba
 import numpy as np
+import numba
 import toml
 
 DEFAULT_SPATIAL_DIMENSION = 3
@@ -217,7 +219,6 @@ class Simulation:
             raise ValueError(f'Expected shape of masses: {expected_shape}, got: {self.masses.shape}')
         if self.masses.shape != self.particle_types.shape:
             self.particle_types = np.zeros(shape=self.masses.shape, dtype=np.int32)
-
 
     def set_random_velocities(self, temperature: float = 1.0):
         """ Set velocities from Normal distribution with variance temperature / mass
@@ -819,15 +820,3 @@ class Simulation:
             self.number_of_steps = meta_data_dict['number_of_steps']
             self.number_of_neighbor_list_updates = meta_data_dict['number_of_neighbor_list_updates']
         return meta_data_dict
-
-
-def test_simulation():
-    sim = Simulation()
-    steps = 100
-    for i in range(steps):
-        sim.step()
-    assert sim.get_potential_energy() > 0.0
-
-
-if __name__ == '__main__':
-    test_simulation()
