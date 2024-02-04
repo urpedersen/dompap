@@ -1,4 +1,6 @@
-from dompap import Simulation, autotune
+from dompap import Simulation
+from dompap.tools import autotune
+
 
 def test_autotune(verbose=False, plot=False, test_double_loop=True):
     # Setup Lennard-Jones simulation

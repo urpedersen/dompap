@@ -20,7 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dompap import Simulation, autotune
+from dompap import Simulation
+from dompap.tools import autotune
 from dompap.tools import progress_bar
 
 

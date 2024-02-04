@@ -3,8 +3,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from dompap import Simulation, autotune
-from dompap.tools import progress_bar
+from dompap import Simulation
+from dompap.tools import progress_bar, autotune
 
 def plot_sim():
     global sim

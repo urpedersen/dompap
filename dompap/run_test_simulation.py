@@ -1,7 +1,7 @@
 from time import perf_counter
 
-from dompap import Simulation, autotune
-from dompap.tools import progress_bar
+from dompap import Simulation
+from dompap.tools import progress_bar, autotune
 
 def run_test_simulation(verbose=False) -> Simulation:
     if verbose:

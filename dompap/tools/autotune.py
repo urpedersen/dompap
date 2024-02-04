@@ -1,4 +1,4 @@
-from dompap import Simulation
+from .. import Simulation
 
 
 def autotune(sim: Simulation, steps=100, test_double_loop=True,
