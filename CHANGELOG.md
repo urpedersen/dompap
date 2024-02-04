@@ -36,3 +36,6 @@ New features:
 
 Bugfix:
 * autotuner was verbose when it should be silent.
+
+Other:
+* Refactored the code, so all test are in the `tests` folder.
