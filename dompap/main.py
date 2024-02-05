@@ -1,3 +1,5 @@
+import sys
+
 help_message = """      dompap - Simulations of point-like particles in any dimension with any pair potential
 
 Usage: dompap [options]
@@ -8,7 +10,6 @@ Options:
 
 Repository: <https://github.com/urpedersen/dompap>
 """
-import sys
 
 
 def main(argv):
