@@ -34,6 +34,9 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Physics',
 ]
 
+[tool.hatch.version]
+path = "dompap/__init__.py"
+
 [project.urls]
 Homepage = "https://github.com/urpedersen/dompap"
 Issues = "https://github.com/urpedersen/dompap/issues"
