@@ -11,3 +11,5 @@ Repository: <https://github.com/urpedersen/dompap>
 from .Simulation import Simulation
 from .main import main
 from . import tools
+
+__version__ = '0.0.5'
