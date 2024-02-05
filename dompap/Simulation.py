@@ -56,7 +56,9 @@ def default_func_r():
 
 @dataclass
 class Simulation:
-    """ Simulation class. The default simulation is a 5x5x5 simple cubic lattice of particles with unit mass, diameter
+    """ Simulation class.
+
+    The default simulation is a 5x5x5 simple cubic lattice of particles with unit mass, diameter
     and epsilon. The box vectors are [5, 5, 5] and the particles are placed at [0, 0, 0], [0, 0, 1], ... [4, 4, 4].
     The default pair potential is the harmonic repulsive potential (1-r)**2, where r is the distance between two
     particles. The default pair potential is truncated at r_cut = 1.0. The default neighbor list is updated if a
@@ -64,19 +66,23 @@ class Simulation:
     is 128. The ntegrator is a Langevin VT Leap-frog integrator. The default time step is 0.01,
     the default target temperature is 1.0, and the default temperature damping time is 0.1. Below is an example of how
     to set up a simulatio (using the default values):
-    >>> from dompap import Simulation
-    >>> sim = Simulation()
-    >>> sim.set_positions(unit_cell_coordinates=([0.0, 0.0, 0.0],), cells=(5, 5, 5), lattice_constants=(1.0, 1.0, 1.0))
-    >>> sim.set_masses(masses=1.0)
-    >>> sim.set_random_velocities(temperature=1.0)
-    >>> sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
-    >>> sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=128)
-    >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=1.0)
-    >>> print(sim)
-    Simulation:
-        positions: [[0. 0. 0.]] ... [[4. 4. 4.]]
-        box_vectors: [5. 5. 5.]
-        masses: [[1.]] ... [[1.]]
+
+    Example
+    -------
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.set_positions(unit_cell_coordinates=([0.0, 0.0, 0.0],), cells=(5, 5, 5), lattice_constants=(1.0, 1.0, 1.0))
+        >>> sim.set_masses(masses=1.0)
+        >>> sim.set_random_velocities(temperature=1.0)
+        >>> sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
+        >>> sim.set_neighbor_list(skin=1.0, max_number_of_neighbors=128)
+        >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=1.0)
+        >>> print(sim)
+        Simulation:
+            positions: [[0. 0. 0.]] ... [[4. 4. 4.]]
+            box_vectors: [5. 5. 5.]
+            masses: [[1.]] ... [[1.]]
     """
     # System properties
     particle_types: np.ndarray = field(default_factory=default_particle_types)
@@ -136,22 +142,25 @@ class Simulation:
     def copy(self):
         """ Make a deep copy of the simulation
 
-        >>> from dompap import Simulation
-        >>> sim = Simulation()
-        >>> print(sim.positions[:3])
-        [[0. 0. 0.]
-         [0. 0. 1.]
-         [0. 0. 2.]]
-        >>> sim_copy = sim.copy()
-        >>> sim_copy.positions[0] = [1.0, 0.0, 0.0]
-        >>> print(sim.positions[:3])
-        [[0. 0. 0.]
-         [0. 0. 1.]
-         [0. 0. 2.]]
-        >>> print(sim_copy.positions[:3])
-        [[1. 0. 0.]
-         [0. 0. 1.]
-         [0. 0. 2.]]
+        Example
+        -------
+
+            >>> from dompap import Simulation
+            >>> sim = Simulation()
+            >>> print(sim.positions[:3])
+            [[0. 0. 0.]
+             [0. 0. 1.]
+             [0. 0. 2.]]
+            >>> sim_copy = sim.copy()
+            >>> sim_copy.positions[0] = [1.0, 0.0, 0.0]
+            >>> print(sim.positions[:3])
+            [[0. 0. 0.]
+             [0. 0. 1.]
+             [0. 0. 2.]]
+            >>> print(sim_copy.positions[:3])
+            [[1. 0. 0.]
+             [0. 0. 1.]
+             [0. 0. 2.]]
         """
         from copy import deepcopy
         return deepcopy(self)
@@ -159,15 +168,19 @@ class Simulation:
     def set_positions(self, unit_cell_coordinates: tuple = ([0.0, 0.0, 0.0],), cells: tuple = (5, 5, 5),
                       lattice_constants: tuple = (1.0, 1.0, 1.0)):
         """ Set positions of particles
-        >>> from dompap import Simulation
-        >>> sim = Simulation()
-        >>> sim.set_positions(unit_cell_coordinates=([0, 0, 0],), cells=(5, 5, 5))
-        >>> print(sim.positions[:5])
-        [[0. 0. 0.]
-         [0. 0. 1.]
-         [0. 0. 2.]
-         [0. 0. 3.]
-         [0. 0. 4.]]
+
+        Example
+        -------
+
+            >>> from dompap import Simulation
+            >>> sim = Simulation()
+            >>> sim.set_positions(unit_cell_coordinates=([0, 0, 0],), cells=(5, 5, 5))
+            >>> print(sim.positions[:5])
+            [[0. 0. 0.]
+             [0. 0. 1.]
+             [0. 0. 2.]
+             [0. 0. 3.]
+             [0. 0. 4.]]
         """
         from .positions import generate_positions
         unit_cell_coordinates = np.array(unit_cell_coordinates, dtype=np.float64)
@@ -184,24 +197,28 @@ class Simulation:
 
     def set_masses(self, masses: float | list | np.ndarray = 1.0):
         """ Set masses of particles.
-        The masses can be given as a float, list or ndarray
-        >>> from dompap import Simulation
-        >>> sim = Simulation()
-        >>> sim.set_masses(masses=1.0)
-        >>> print(sim.masses[:3])
-        [[1.]
-         [1.]
-         [1.]]
-        >>> sim.set_masses(masses=[1.0]*sim.number_of_particles())
-        >>> print(sim.masses[:3])
-        [[1.]
-         [1.]
-         [1.]]
-        >>> sim.set_masses(masses=np.ones(sim.number_of_particles()))
-        >>> print(sim.masses[:3])
-        [[1.]
-         [1.]
-         [1.]]
+
+        The masses can be given as a float, list or ndarray.
+
+        Example
+        -------
+            >>> from dompap import Simulation
+            >>> sim = Simulation()
+            >>> sim.set_masses(masses=1.0)
+            >>> print(sim.masses[:3])
+            [[1.]
+             [1.]
+             [1.]]
+            >>> sim.set_masses(masses=[1.0]*sim.number_of_particles())
+            >>> print(sim.masses[:3])
+            [[1.]
+             [1.]
+             [1.]]
+            >>> sim.set_masses(masses=np.ones(sim.number_of_particles()))
+            >>> print(sim.masses[:3])
+            [[1.]
+             [1.]
+             [1.]]
         """
         # If type is float, set all masses to the same value
         if isinstance(masses, float) or isinstance(masses, int):
@@ -222,9 +239,13 @@ class Simulation:
 
     def set_random_velocities(self, temperature: float = 1.0):
         """ Set velocities from Normal distribution with variance temperature / mass
-        >>> from dompap import Simulation
-        >>> sim = Simulation()
-        >>> sim.set_random_velocities(temperature=1.0)
+
+        Example
+        -------
+
+            >>> from dompap import Simulation
+            >>> sim = Simulation()
+            >>> sim.set_random_velocities(temperature=1.0)
         """
         self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
                                            size=self.positions.shape).astype(np.float64)
@@ -242,6 +263,19 @@ class Simulation:
 
     def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
         """ Update neighbour list
+
+        Parameters
+        ----------
+        skin : float
+            Skin distance for updating neighbor list.
+        max_number_of_neighbors : int
+            Maximum number of neighbors for each particle.
+        method_str : str
+            Method for updating neighbor list.
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> from dompap.neighbor_list import get_number_of_neighbors
         >>> sim = Simulation()
@@ -289,7 +323,14 @@ class Simulation:
         self.positions_neighbour_list = self.positions.copy()
 
     def update_neighbor_list(self, check=True):
-        """ Update neighbour list if needed """
+        """ Update neighbour list if needed
+
+        Parameters
+        ----------
+        check : bool
+            If True, check if neighbour list is old before updating.
+
+        """
         from .neighbor_list import neighbor_list_is_old
         if check and not neighbor_list_is_old(self.positions, self.positions_neighbour_list, self.box_vectors,
                                               self.neighbor_list_skin):
@@ -299,6 +340,20 @@ class Simulation:
     def set_pair_potential(self, pair_potential_str: str = '(1-r)**2', r_cut: float = 1.0,
                            force_method=None, energy_method=None):
         """ Set pair potential.py and force
+
+        Parameters
+        ----------
+        pair_potential_str : str
+            String representation of the pair potential. Use `r` as the distance between two particles.
+        r_cut : float
+            Cutoff distance for the pair potential. I.e the pair potential is zero for r > r_cut.
+        force_method : str
+            Method for calculating forces. See  `self._KNOWN_FORCE_METHODS` for available methods.
+        energy_method : str
+            Method for calculating energy. See  `self._KNOWN_ENERGY_METHODS` for available methods.
+
+        Example
+        -------
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
@@ -338,7 +393,20 @@ class Simulation:
         self.set_neighbor_list()
 
     def set_pair_potential_parameters(self, sigma: float = 1.0, epsilon: float = 1.0):
-        """ Set potential parameters. Give sigma and epsilon as floats or callables.
+        """ Set potential parameters.
+
+        Give sigma and epsilon as floats or callables.
+
+        Parameters
+        ----------
+        sigma : float | callable
+            Sigma parameter of the pair potential. If callable, it should take two arguments n and m, and return a float.
+        epsilon : float | callable
+            Epsilon parameter of the pair potential. If callable, it should take two arguments n and m, and return a float.
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)  # Set all sigmas and epsilons to 1.0
@@ -382,6 +450,10 @@ class Simulation:
 
     def scale_box(self, scale_factor: float):
         """ Scale box vectors and positions
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.box_vectors)
@@ -396,6 +468,10 @@ class Simulation:
 
     def get_potential_energy(self):
         """ Get total energy of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.scale_box(0.5)
@@ -422,6 +498,10 @@ class Simulation:
 
     def get_forces(self) -> np.ndarray:
         """ Get forces on all particles
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.positions[0] = [0.5, 0.0, 0.0]  # Shift particle 0 so that the force is not zero
@@ -455,6 +535,10 @@ class Simulation:
 
     def wrap_into_box(self):
         """ Wrap all particles into box
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.box_vectors)
@@ -475,6 +559,10 @@ class Simulation:
 
     def step(self):
         """ Make one step in the simulation
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.step()
@@ -491,6 +579,10 @@ class Simulation:
 
     def run(self, steps: int = 1000):
         """ Run simulation
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.run(steps=1000)
@@ -503,6 +595,10 @@ class Simulation:
                        target_temperature: float = None,
                        temperature_damping_time: float = None):
         """ Set integrator parameters
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
@@ -516,6 +612,10 @@ class Simulation:
 
     def number_of_particles(self) -> int:
         """ Get number of particles
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.number_of_particles())
@@ -525,6 +625,10 @@ class Simulation:
 
     def get_density(self) -> float:
         """ Get density of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(f'Density: {sim.get_density():.3f}')
@@ -534,6 +638,10 @@ class Simulation:
 
     def set_density(self, density: float = 1.0):
         """ Set density of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_density(density=0.9)
@@ -547,6 +655,10 @@ class Simulation:
 
     def get_dimensions_of_space(self) -> int:
         """ Get dimensions of space
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.get_dimensions_of_space())
@@ -556,6 +668,10 @@ class Simulation:
 
     def get_temperature(self) -> float:
         """ Get temperature of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(f'Temperature: {sim.get_temperature():.0f}')
@@ -571,6 +687,10 @@ class Simulation:
 
     def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
         """ Get radial distribution function
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> r_bins = np.linspace(0.1, 3.0, 100)
@@ -585,6 +705,10 @@ class Simulation:
 
     def get_kinetic_energy(self) -> float:
         """ Get kinetic energy of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.velocities = np.ones_like(sim.velocities)  # Set all velocities to 1
@@ -597,6 +721,10 @@ class Simulation:
 
     def get_diameters(self) -> np.ndarray:
         """ Get diameters of particles
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.get_diameters()[:3])
@@ -611,6 +739,10 @@ class Simulation:
 
     def get_time(self) -> float:
         """ Get time of the simulation
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_integrator(time_step=0.01, target_temperature=1.0, temperature_damping_time=0.1)
@@ -622,6 +754,17 @@ class Simulation:
         return float(self.number_of_steps * self.time_step)
 
     def get_virial(self) -> float:
+        """ Get virial of the system
+
+        Example
+        -------
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.set_random_velocities(temperature=0.0)
+        >>> print(sim.get_virial())
+        0.0
+        """
         from .potential import _get_virial_double_loop
         self.update_neighbor_list()
         virial = _get_virial_double_loop(self.positions, self.box_vectors, self.pair_force,
@@ -630,6 +773,10 @@ class Simulation:
 
     def get_pressure(self) -> float:
         """ Get pressure of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_random_velocities(temperature=0.0)
@@ -647,6 +794,10 @@ class Simulation:
 
     def get_volume(self) -> float:
         """ Get volume of the system
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(sim.get_volume())
@@ -656,6 +807,10 @@ class Simulation:
 
     def set_particle_types(self, types):
         """ Set particle types
+
+        Example
+        -------
+
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_particle_types(types=1)
@@ -667,7 +822,10 @@ class Simulation:
         self.particle_types = np.ones_like(self.masses, dtype=np.int32) * types
 
     def to_disk(self, particle_data='simulation.csv', meta_data='simulation.toml'):
-        """ Save simulation data to disk. Particle data as CSV file, and meta data as TOML file. """
+        """ Save simulation data to disk.
+
+        Particle data as CSV file, and meta data as TOML file.
+        """
 
         # Save particle data to CSV file
         dimensions_of_space = self.get_dimensions_of_space()
@@ -723,7 +881,9 @@ class Simulation:
 
     def from_disk(self, particle_data='simulation.csv', meta_data='simulation.toml',
                   verbose=False, set_only_particle_data=False) -> dict:
-        """ Load simulation data from disk. Particle data as CSV file, and meta data as TOML file.
+        """ Load simulation data from disk.
+
+        Particle data as CSV file, and meta data as TOML file.
          Set simulation box vectors, and particle data. Return meta data from disk as dict.
         """
 
