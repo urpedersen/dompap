@@ -6,6 +6,7 @@ The user is not expected to be familiar with these packages but only basic Pytho
 
 ## Installation
 
+
 ### Use the Python package index (PyPI)
 The package can be installed from the Python package index (PyPI) using pip.
 ```bash
