@@ -67,8 +67,8 @@ class Simulation:
     the default target temperature is 1.0, and the default temperature damping time is 0.1. Below is an example of how
     to set up a simulatio (using the default values):
 
-    Example
-    -------
+    Examples
+    --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -142,8 +142,8 @@ class Simulation:
     def copy(self):
         """ Make a deep copy of the simulation
 
-        Example
-        -------
+        Examples
+        --------
 
             >>> from dompap import Simulation
             >>> sim = Simulation()
@@ -169,8 +169,8 @@ class Simulation:
                       lattice_constants: tuple = (1.0, 1.0, 1.0)):
         """ Set positions of particles
 
-        Example
-        -------
+        Examples
+        --------
 
             >>> from dompap import Simulation
             >>> sim = Simulation()
@@ -200,8 +200,8 @@ class Simulation:
 
         The masses can be given as a float, list or ndarray.
 
-        Example
-        -------
+        Examples
+        --------
             >>> from dompap import Simulation
             >>> sim = Simulation()
             >>> sim.set_masses(masses=1.0)
@@ -240,8 +240,8 @@ class Simulation:
     def set_random_velocities(self, temperature: float = 1.0):
         """ Set velocities from Normal distribution with variance temperature / mass
 
-        Example
-        -------
+        Examples
+        --------
 
             >>> from dompap import Simulation
             >>> sim = Simulation()
@@ -273,8 +273,8 @@ class Simulation:
         method_str : str
             Method for updating neighbor list.
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> from dompap.neighbor_list import get_number_of_neighbors
@@ -352,8 +352,8 @@ class Simulation:
         energy_method : str
             Method for calculating energy. See  `self._KNOWN_ENERGY_METHODS` for available methods.
 
-        Example
-        -------
+        Examples
+        --------
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> sim.set_pair_potential(pair_potential_str='(1-r)**2', r_cut=1.0)
@@ -404,8 +404,8 @@ class Simulation:
         epsilon : float | callable
             Epsilon parameter of the pair potential. If callable, it should take two arguments n and m, and return a float.
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -451,8 +451,8 @@ class Simulation:
     def scale_box(self, scale_factor: float):
         """ Scale box vectors and positions
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -469,8 +469,8 @@ class Simulation:
     def get_potential_energy(self):
         """ Get total energy of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -499,8 +499,8 @@ class Simulation:
     def get_forces(self) -> np.ndarray:
         """ Get forces on all particles
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -536,8 +536,8 @@ class Simulation:
     def wrap_into_box(self):
         """ Wrap all particles into box
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -560,8 +560,8 @@ class Simulation:
     def step(self):
         """ Make one step in the simulation
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -580,8 +580,8 @@ class Simulation:
     def run(self, steps: int = 1000):
         """ Run simulation
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -596,8 +596,8 @@ class Simulation:
                        temperature_damping_time: float = None):
         """ Set integrator parameters
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -613,8 +613,8 @@ class Simulation:
     def number_of_particles(self) -> int:
         """ Get number of particles
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -626,8 +626,8 @@ class Simulation:
     def get_density(self) -> float:
         """ Get density of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -639,8 +639,8 @@ class Simulation:
     def set_density(self, density: float = 1.0):
         """ Set density of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -656,8 +656,8 @@ class Simulation:
     def get_dimensions_of_space(self) -> int:
         """ Get dimensions of space
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -669,8 +669,8 @@ class Simulation:
     def get_temperature(self) -> float:
         """ Get temperature of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -688,8 +688,8 @@ class Simulation:
     def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
         """ Get radial distribution function
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -706,8 +706,8 @@ class Simulation:
     def get_kinetic_energy(self) -> float:
         """ Get kinetic energy of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -722,8 +722,8 @@ class Simulation:
     def get_diameters(self) -> np.ndarray:
         """ Get diameters of particles
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -740,8 +740,8 @@ class Simulation:
     def get_time(self) -> float:
         """ Get time of the simulation
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -756,8 +756,8 @@ class Simulation:
     def get_virial(self) -> float:
         """ Get virial of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -774,8 +774,8 @@ class Simulation:
     def get_pressure(self) -> float:
         """ Get pressure of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -795,8 +795,8 @@ class Simulation:
     def get_volume(self) -> float:
         """ Get volume of the system
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
@@ -808,8 +808,8 @@ class Simulation:
     def set_particle_types(self, types):
         """ Set particle types
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()

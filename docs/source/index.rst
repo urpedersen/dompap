@@ -3,17 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to dompap's documentation!
+dompap's
 ==================================
 
+Inset math example
 
+.. math::
+   :label: eq1
+
+   \int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi}
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Contents:
 
    quick_start
-   examples
    api
 
 Indices and tables

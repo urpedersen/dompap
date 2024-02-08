@@ -4,6 +4,8 @@ from .. import Simulation
 def autotune(sim: Simulation, steps=100, test_double_loop=True,
              smallest_skin=0.1, step_skin=0.1,
              verbose=False, plot=False) -> Simulation:
+    """ Autotune the neighbor list and force methods for a simulation. """
+
     from time import perf_counter
 
     sim_copy = sim.copy()

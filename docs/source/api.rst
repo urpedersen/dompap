@@ -1,15 +1,9 @@
 API Reference
 =============
 
-
+The Simulation class
+--------------------
 
 .. autoclass:: dompap.Simulation
-   :members:
-   :undoc-members:
-
-
-.. automodule:: dompap.tools
-   :members:
-   :undoc-members:
-   :show-inheritance:
+  :members:
 
