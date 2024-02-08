@@ -56,7 +56,10 @@ def default_func_r():
 
 @dataclass
 class Simulation:
-    """ Simulation class.
+    """
+
+    The Simulation class
+    --------------------
 
     The default simulation is a 5x5x5 simple cubic lattice of particles with unit mass, diameter
     and epsilon. The box vectors are [5, 5, 5] and the particles are placed at [0, 0, 0], [0, 0, 1], ... [4, 4, 4].

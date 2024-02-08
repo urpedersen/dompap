@@ -1,10 +1,38 @@
-from .. import Simulation
+from dompap import Simulation
 
 
 def autotune(sim: Simulation, steps=100, test_double_loop=True,
              smallest_skin=0.1, step_skin=0.1,
              verbose=False, plot=False) -> Simulation:
-    """ Autotune the neighbor list and force methods for a simulation. """
+    """ Autotune the neighbor list and force methods for a simulation.
+
+    Parameters
+    ----------
+    sim : Simulation
+        Simulation to be autotuned.
+    steps : int
+        Number of steps to run for each skin value.
+    test_double_loop : bool
+        Whether to test the double loop method.
+    smallest_skin : float
+        Smallest skin value to test.
+    step_skin : float
+        Step size for skin values.
+    verbose : bool
+        Whether to print additional information.
+    plot : bool
+        Whether to plot results of skin values
+
+
+    Examples
+    --------
+
+    >>> from dompap import Simulation
+    >>> from dompap.tools import autotune
+    >>> sim = Simulation()
+    >>> # Set up a simulation
+    >>> sim = autotune(sim)
+    """
 
     from time import perf_counter
 

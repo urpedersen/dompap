@@ -22,7 +22,7 @@ release = dompap.__version__
 
 extensions = [
     #'numpydoc',
-    'myst_parser',
+    'myst_nb',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.viewcode',

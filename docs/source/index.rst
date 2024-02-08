@@ -6,18 +6,12 @@
 dompap's
 ==================================
 
-Inset math example
-
-.. math::
-   :label: eq1
-
-   \int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi}
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    quick_start
+   examples
    api
 
 Indices and tables
