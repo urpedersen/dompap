@@ -34,6 +34,11 @@ extensions = [
 
 mathjax_path="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
+html_theme_options = {
+  "show_nav_level": 2
+}
+
+
 templates_path = ['_templates']
 exclude_patterns = []
 
