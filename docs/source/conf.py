@@ -6,14 +6,16 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../../'))   # Adjust the path as necessary
+
+import os, sys
+sys.path.insert(0, os.path.abspath('../..'))
+# Fix: export PYTHONPATH="${PYTHONPATH}:/home/$USER/PycharmProjects/dompap"
+
 
 import dompap
 
 project = 'dompap'
-copyright = '2024, Ulf R. Pedersen'
+# copyright = '2024, Ulf R. Pedersen'
 author = 'Ulf R. Pedersen'
 release = dompap.__version__
 
@@ -24,20 +26,22 @@ extensions = [
     #'numpydoc',
     'myst_nb',
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosectionlabel',
+    # 'sphinx.ext.autosectionlabel',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
-    'sphinx.ext.autosectionlabel'
+    # 'sphinx.ext.autosectionlabel'
 ]
-
-mathjax_path="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
-
-html_theme_options = {
-  "show_nav_level": 2
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.ipynb': 'myst-nb',
+    '.myst': 'myst-nb',
 }
+myst_enable_extensions = ["dollarmath", "amsmath"]
 
+# Add logo
+# dompap = '_static/dompap_logo_80x80.png'
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -47,3 +51,10 @@ exclude_patterns = []
 # html_theme = 'alabaster'
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
+
+
+
+html_theme_options = {
+  "show_toc_level": 4,
+  "nosidebar": True,
+}

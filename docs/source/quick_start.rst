@@ -1,15 +1,26 @@
+###########
 Quick Start
-===========
+###########
 
 Installation
-------------
+============
+
+From PyPI
+---------
 
 .. code-block:: bash
 
     pip install dompap
 
-Usage
------
+Download source code
+--------------------
+
+.. code-block:: bash
+
+    git clone ...
+
+Usage Example
+=============
 
 Minimal example of running a simulation
 
