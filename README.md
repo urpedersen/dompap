@@ -20,11 +20,9 @@ Clone the repository from github at https://github.com/urpedersen/dompap.git
 cd [dir]
 git clone https://github.com/urpedersen/dompap.git
 
-# Add to python path
-export PYTHONPATH=$PYTHONPATH:$PWD/dompap
+cd dompap
 
-# Install requirements
-pip install -r ./dompap/requirements.txt
+pip install .
 ```
 
 ## Usage example
