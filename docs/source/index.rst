@@ -11,14 +11,34 @@ The dompap package focuses on simulations of point-like particles in any dimensi
 The package uses NumPy and Numba for efficient calculations and SymPy to implement any pair potentials.
 The user is not expected to be familiar with these packages but only basic Python syntax.
 
+Quick Start
+===========
+
 .. toctree::
    :caption: Contents
    :maxdepth: 2
 
    quick_start
+
+Tutorials
+=========
+
+.. toctree::
+   :caption: Contents
+   :maxdepth: 2
+
    tutorial
    examples
+
+API
+===
+
+.. toctree::
+   :caption: Contents
+   :maxdepth: 2
+
    api
+
 
 Indices and tables
 ==================

@@ -56,5 +56,6 @@ html_static_path = ['_static']
 
 html_theme_options = {
   "show_toc_level": 4,
-  "nosidebar": True,
+   "navigation_depth": 2,
+#"nosidebar": True,
 }
