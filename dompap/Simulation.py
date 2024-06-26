@@ -126,6 +126,7 @@ class Simulation:
     pair_potential: callable = None
     pair_potential_str: str = None
     pair_force: callable = None
+    pair_curvature: callable = None
     epsilon_func: callable = field(default_factory=default_func_n_m)
     sigma_func: callable = field(default_factory=default_func_n_m)
 
@@ -369,7 +370,8 @@ class Simulation:
             self.pair_potential_str = hardcoded_pair_potentials[pair_potential_str][0]
             self.pair_potential = hardcoded_pair_potentials[pair_potential_str][1]
             self.pair_force = hardcoded_pair_potentials[pair_potential_str][2]
-            self.pair_potential_r_cut = hardcoded_pair_potentials[pair_potential_str][3]
+            self.pair_curvature = hardcoded_pair_potentials[pair_potential_str][3]
+            self.pair_potential_r_cut = hardcoded_pair_potentials[pair_potential_str][4]
             self.set_neighbor_list()
             return
 
@@ -377,7 +379,7 @@ class Simulation:
         from .potential import make_pair_potential
         self.pair_potential_str = pair_potential_str
         self.pair_potential_r_cut = np.float64(r_cut)
-        self.pair_potential, self.pair_force = make_pair_potential(
+        self.pair_potential, self.pair_force, self.pair_curvature = make_pair_potential(
             pair_potential_str=pair_potential_str,
             r_cut=r_cut
         )
@@ -701,10 +703,10 @@ class Simulation:
         >>> print(f'Configurational temperature: {sim.get_configurational_temperature():.0f}')
         Configurational temperature: 1
         """
-        raise NotImplementedError('Calculating configurational temperature is not implemented yet.')
         forces = self.get_forces()
         numerator = np.sum(forces ** 2)  # Force squared
-        denominator = 1.0  # Laplacian of the potential
+        laplacian = self.get_laplacian()
+        denominator = laplacian  # Laplacian of the potential
         return float(numerator / denominator)
 
     def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
@@ -1002,3 +1004,20 @@ class Simulation:
             self.number_of_steps = meta_data_dict['number_of_steps']
             self.number_of_neighbor_list_updates = meta_data_dict['number_of_neighbor_list_updates']
         return meta_data_dict
+
+    def get_laplacian(self) -> float:
+        """ Get laplacian of the potential
+
+        Examples
+        --------
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.get_laplacian())
+        """
+        from .potential import _get_curvatures_double_loop
+        self.update_neighbor_list()
+        curvatures = _get_curvatures_double_loop(self.positions, self.box_vectors, self.pair_curvature,
+                                                 self.sigma_func, self.epsilon_func)
+        return float(np.sum(curvatures))
+

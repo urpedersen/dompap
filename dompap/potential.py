@@ -23,11 +23,17 @@ def harmonic_repulsion_force(r):
         return 0.0
 
 
+@numba.njit
+def harmonic_repulsion_curvature(r):
+    return 0.0
+
+
 hardcoded_pair_potentials = {
     # Name: (pair_potential_str, energy, force, r_cut)
     'Harmonic repulsive': ('0.5*(1-r)**2',
                            harmonic_repulsion_pot,
                            harmonic_repulsion_force,
+                           harmonic_repulsion_curvature,
                            1.0)
 }
 
@@ -38,15 +44,18 @@ def make_pair_potential(pair_potential_str='(((1-r)**2)**(1/2))**(7/2)', r_cut=1
     # Define pair potential and force
     pair_potential = sp.sympify(pair_potential_str)
     pair_force = sp.diff(-pair_potential, r)
+    pair_curvature = sp.diff(pair_potential, r, 2)
     # Lambdify to numpy functions
     pair_potential = numba.njit(sp.lambdify(r, pair_potential, 'numpy'))
     pair_force = numba.njit(sp.lambdify(r, pair_force, 'numpy'))
+    pair_curvature = numba.njit(sp.lambdify(r, pair_curvature, 'numpy'))
     # Shift and truncate at r_cut
     pair_potential_shift = numba.njit(lambda r: pair_potential(r) - pair_potential(r_cut))
-    # Let function return zero if r > r_cut
+    # Let functions return zero if r > r_cut
     pair_potential_cut = numba.njit(lambda r: np.where(r > r_cut, 0, pair_potential_shift(r)))
     pair_force_cut = numba.njit(lambda r: np.where(r > r_cut, 0, pair_force(r)))
-    return pair_potential_cut, pair_force_cut
+    pair_curvature_cut = numba.njit(lambda r: np.where(r > r_cut, 0, pair_curvature(r)))
+    return pair_potential_cut, pair_force_cut, pair_curvature_cut
 
 
 @numba.njit
@@ -274,3 +283,22 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
     unit_vectors = displacement_vectors / distances[:, :, np.newaxis]
     forces = np.sum(scalar_forces[:, :, np.newaxis] * unit_vectors, axis=1)
     return forces
+
+#@numba.njit(parallel=True)
+def _get_curvatures_double_loop(positions, box_vectors, pair_curvature, sigma_func, epsilon_func):
+    """ Get curvatures on all particles using double loop """
+    raise NotImplementedError("This function is not implemented yet")
+    number_of_particles = positions.shape[0]
+    curvatures = np.zeros_like(positions)
+    for n in numba.prange(number_of_particles):
+        for m in range(number_of_particles):
+            if m == n:
+                continue
+            displacement = get_displacement_vector(positions[n], positions[m], box_vectors)
+            distance = np.sum(displacement ** 2) ** 0.5
+            sigma = sigma_func(n, m)
+            epsilon = epsilon_func(n, m)
+            curvature = epsilon * pair_curvature(distance / sigma)
+            unit_vector = displacement / distance
+            curvatures[n] = curvatures[n] + curvature * unit_vector
+    return curvatures
