@@ -688,6 +688,25 @@ class Simulation:
         temperature = np.sum(m * v_squared) / (dimensions_of_space * number_of_particles)
         return float(temperature)
 
+    def get_configurational_temperature(self) -> float:
+        """ Get configurational temperature of the system defined as the ratio
+        of the force squared over the laplacian: T_c=⟨[∇U(r)]²⟩/⟨∇²U(r)⟩
+        where ⟨...⟩ is average over all particles.
+
+        Examples
+        --------
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(f'Configurational temperature: {sim.get_configurational_temperature():.0f}')
+        Configurational temperature: 1
+        """
+        raise NotImplementedError('Calculating configurational temperature is not implemented yet.')
+        forces = self.get_forces()
+        numerator = np.sum(forces ** 2)  # Force squared
+        denominator = 1.0  # Laplacian of the potential
+        return float(numerator / denominator)
+
     def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
         """ Get radial distribution function
 
