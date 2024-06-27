@@ -572,13 +572,34 @@ class Simulation:
         >>> sim = Simulation()
         >>> sim.step()
         """
-        from .integrator import make_one_step
+        from .integrator import make_one_step, make_one_step_leap_frog
+
         self.update_neighbor_list()
         forces = self.get_forces()
         old_state = self.positions, self.velocities, self.betas
         parameters = self.time_step, self.temperature_target, self.temperature_damping_time
         new_state = make_one_step(*old_state, forces, self.masses, *parameters)
         self.positions, self.velocities, self.betas = new_state
+        self.wrap_into_box()
+        self.number_of_steps += 1
+
+    def step_leap_frog(self):
+        """ Make one step in the simulation using the NVE Leap-frog integrator
+
+        Examples
+        --------
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> sim.step_leap_frog()
+        """
+        from .integrator import make_one_step_leap_frog
+
+        self.update_neighbor_list()
+        forces = self.get_forces()
+        old_state = self.positions, self.velocities
+        new_state = make_one_step_leap_frog(*old_state, forces, self.masses, self.time_step)
+        self.positions, self.velocities = new_state
         self.wrap_into_box()
         self.number_of_steps += 1
 

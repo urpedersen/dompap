@@ -285,7 +285,7 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
     return forces
 
 
-@numba.njit(parallel=True)
+@numba.njit
 def _get_laplacian(positions: np.ndarray,
                    box_vectors: np.ndarray,
                    pair_force: callable,
