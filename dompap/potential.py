@@ -285,7 +285,7 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
     return forces
 
 
-@numba.njit
+@numba.njit(parallel=True)
 def _get_laplacian(positions: np.ndarray,
                    box_vectors: np.ndarray,
                    pair_force: callable,
@@ -296,20 +296,28 @@ def _get_laplacian(positions: np.ndarray,
     """ Return the Laplacian of for each particle """
     number_of_particles = positions.shape[0]
     laplacians = np.zeros(number_of_particles, dtype=np.float64)
-    dim_of_space = positions.shape[1]
+    dimension_of_space = positions.shape[1]
     for n in numba.prange(number_of_particles):
         positions_n = positions[n]
+        this_lap = 0.0
         for m in neighbor_list[n]:
             if m == -1:
                 break
             position_m = positions[m]
             displacement = get_displacement_vector(positions_n, position_m, box_vectors)
-            distance = np.sum(displacement ** 2) ** 0.5
+            distance = 0.0
+            for d in range(dimension_of_space):
+                if displacement[d] > box_vectors[d] / 2:
+                    displacement[d] -= box_vectors[d]
+                elif displacement[d] < -box_vectors[d] / 2:
+                    displacement[d] += box_vectors[d]
+                distance += displacement[d] ** 2
+            distance = distance ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
             dv_dr = -scalar_force
             dv2_dr2 = epsilon * pair_curvature(distance / sigma)
-            this_lap = (dv2_dr2 + (dim_of_space-1)*dv_dr/distance)*2.0
-            laplacians[n] += this_lap
+            this_lap += dv2_dr2 + (dimension_of_space-1)*dv_dr/distance
+        laplacians[n] = this_lap
     return laplacians
