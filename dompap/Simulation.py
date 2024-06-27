@@ -704,9 +704,10 @@ class Simulation:
         Configurational temperature: 1
         """
         forces = self.get_forces()
-        numerator = np.sum(forces ** 2)  # Force squared
+        force_squared = np.sum(forces ** 2, axis=1)
+        numerator = np.mean(force_squared)  # Avg. Force squared
         laplacian = self.get_laplacian()
-        denominator = laplacian  # Laplacian of the potential
+        denominator = np.mean(laplacian)  # Laplacian of the potential
         return float(numerator / denominator)
 
     def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
@@ -1005,19 +1006,22 @@ class Simulation:
             self.number_of_neighbor_list_updates = meta_data_dict['number_of_neighbor_list_updates']
         return meta_data_dict
 
-    def get_laplacian(self) -> float:
-        """ Get laplacian of the potential
+    def get_laplacian(self) -> np.ndarray:
+        """ Get particle laplacians
 
         Examples
         --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> print(sim.get_laplacian())
+        >>> laplacian = sim.get_laplacian()
+        >>> print(laplacian[0])  # Laplacian of particle 0
+        0.0
         """
-        from .potential import _get_curvatures_double_loop
+        from .potential import _get_laplacian
         self.update_neighbor_list()
-        curvatures = _get_curvatures_double_loop(self.positions, self.box_vectors, self.pair_curvature,
-                                                 self.sigma_func, self.epsilon_func)
-        return float(np.sum(curvatures))
+        laplacian = _get_laplacian(self.positions, self.box_vectors,
+                             self.pair_force, self.pair_curvature, self.neighbor_list,
+                             self.sigma_func, self.epsilon_func)
+        return laplacian
 

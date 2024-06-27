@@ -7,7 +7,7 @@ from dompap import Simulation
 # Initialize simulation object
 sim = Simulation()
 
-# Setup simulation
+# Setup Lennard-Jones simulation
 fcc_unit_cell = np.array([
     (0.0, 0.0, 0.0),
     (0.5, 0.5, 0.0),

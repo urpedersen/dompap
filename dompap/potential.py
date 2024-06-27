@@ -284,21 +284,32 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
     forces = np.sum(scalar_forces[:, :, np.newaxis] * unit_vectors, axis=1)
     return forces
 
-#@numba.njit(parallel=True)
-def _get_curvatures_double_loop(positions, box_vectors, pair_curvature, sigma_func, epsilon_func):
-    """ Get curvatures on all particles using double loop """
-    raise NotImplementedError("This function is not implemented yet")
+
+@numba.njit(parallel=True)
+def _get_laplacian(positions: np.ndarray,
+                   box_vectors: np.ndarray,
+                   pair_force: callable,
+                   pair_curvature: callable,
+                   neighbor_list: np.ndarray,
+                   sigma_func: callable,
+                   epsilon_func: callable) -> np.ndarray:
+    """ Return the Laplacian of for each particle """
     number_of_particles = positions.shape[0]
-    curvatures = np.zeros_like(positions)
+    laplacians = np.zeros(number_of_particles, dtype=np.float64)
+    dim_of_space = positions.shape[1]
     for n in numba.prange(number_of_particles):
-        for m in range(number_of_particles):
-            if m == n:
-                continue
-            displacement = get_displacement_vector(positions[n], positions[m], box_vectors)
+        positions_n = positions[n]
+        for m in neighbor_list[n]:
+            if m == -1:
+                break
+            position_m = positions[m]
+            displacement = get_displacement_vector(positions_n, position_m, box_vectors)
             distance = np.sum(displacement ** 2) ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
-            curvature = epsilon * pair_curvature(distance / sigma)
-            unit_vector = displacement / distance
-            curvatures[n] = curvatures[n] + curvature * unit_vector
-    return curvatures
+            scalar_force = epsilon * pair_force(distance / sigma)
+            dv_dr = -scalar_force
+            dv2_dr2 = epsilon * pair_curvature(distance / sigma)
+            this_lap = (dv2_dr2 + (dim_of_space-1)*dv_dr/distance)*2.0
+            laplacians[n] += this_lap
+    return laplacians
