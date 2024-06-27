@@ -13,15 +13,17 @@ fcc_unit_cell = np.array([
     (0.5, 0.0, 0.5),
     (0.0, 0.5, 0.5)
 ], dtype=np.float64)
-temperature = 0.7
+temperature = 0.8
 sim.set_positions(unit_cell_coordinates=fcc_unit_cell, cells=(5, 5, 5))
-sim.set_density(density=1/1.0452)
+specific_volume = 1.0277
+density = 1.0 / specific_volume
+sim.set_density(density=density)
 sim.set_masses(masses=1.0)
 sim.set_random_velocities(temperature=temperature*2)
 sim.set_pair_potential(pair_potential_str='4*(r**-12-r**-6)', r_cut=2.5)
 sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
 sim.set_neighbor_list(skin=0.6, max_number_of_neighbors=128)
-sim.set_integrator(time_step=0.004, target_temperature=temperature, temperature_damping_time=0.5)
+sim.set_integrator(time_step=0.004, target_temperature=temperature, temperature_damping_time=2.0)
 
 # Equilibrate
 sim.run(200)
@@ -59,12 +61,11 @@ for step in range(steps):
 
 # Print summary statistics
 print(f'Average potential energy per particle: U = {np.mean(E_pots)/N}')
-# from litterature −5.156
-u_litterature = -5.156
-print(f'{u_litterature = }')
+expected_potential_energy = -4.953 - 0.8 * 3 / 2
+print(f'{expected_potential_energy = }')
 print(f'Pressure = {np.mean(pressures)}')
-p_litterature = 0.928
-print(f'{p_litterature = }')
+expected_pressure = 2.185
+print(f'{expected_pressure = }')
 print(f'Average configurational temperature: T_c = {np.mean(T_confs)}')
 print(f'Average kinetic temperature: T_k = {np.mean(T_kins)}')
 print(f'T_k/T_c ratio: {np.mean(T_kins)/np.mean(T_confs)}')
