@@ -24,6 +24,7 @@ sim.set_neighbor_list(skin=0.6, max_number_of_neighbors=128)
 sim.set_integrator(time_step=0.004, target_temperature=temperature, temperature_damping_time=2.0)
 
 # Equilibrate
+print('Equilibrating...')
 steps_for_equilibration = 1000
 sim.run(steps_for_equilibration)
 
@@ -56,10 +57,12 @@ print(f'Standard deviation of kinetic temperature: T_k = {np.std(T_kins)}')
 
 # Plot configurational temperature and kinetic temperature
 plt.figure()
+plt.title(f'Lennard-Jones crystal at density {density}')
 plt.plot(times, T_confs, label='Configurational temperature')
 plt.plot(times, T_kins, label='Kinetic temperature')
+# Dashed line of target temperature
+plt.axhline(y=temperature, color='r', linestyle='--', label='Target temperature')
 plt.xlabel('Time')
 plt.ylabel('Temperature')
 plt.legend()
-plt.xlabel('Time')
 plt.show()
