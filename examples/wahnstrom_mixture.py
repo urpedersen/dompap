@@ -9,7 +9,8 @@ $m_A = 1.0$ and $m_B = 2.0$.
 
 """
 
-from dompap import Simulation, autotune, to_lammps_dump
+from dompap import Simulation
+from dompap.tools import autotune, to_lammps_dump
 
 make_lammps_dump = False  # Set to True to output a LAMMPS dump file
 

@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from dompap import Simulation, autotune
-
+from dompap import Simulation
+from dompap.tools import autotune
 
 def benchmark(nx=5, verbose=False, plot=False):
     sim = Simulation()

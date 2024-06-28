@@ -1,6 +1,7 @@
 from time import perf_counter
 
-from dompap import Simulation, autotune
+from dompap import Simulation
+from dompap.tools import autotune
 
 tic = perf_counter()
 

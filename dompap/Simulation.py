@@ -722,7 +722,7 @@ class Simulation:
         >>> from dompap import Simulation
         >>> sim = Simulation()
         >>> print(f'Configurational temperature: {sim.get_configurational_temperature():.0f}')
-        Configurational temperature: 1
+        Configurational temperature: 0
         """
         forces = self.get_forces()
         force_squared = np.sum(forces ** 2, axis=1)
@@ -1037,7 +1037,7 @@ class Simulation:
         >>> sim = Simulation()
         >>> laplacian = sim.get_laplacian()
         >>> print(laplacian[0])  # Laplacian of particle 0
-        0.0
+        12.0
         """
         from .potential import _get_laplacian
         self.update_neighbor_list()

@@ -2,7 +2,7 @@ from time import perf_counter
 
 import numpy as np
 
-from dompap import Simulation, autotune
+from dompap import Simulation
 
 tic = perf_counter()
 

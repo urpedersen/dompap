@@ -21,7 +21,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from dompap import Simulation, autotune, progress_bar
+from dompap import Simulation
+from dompap.tools import progress_bar
 
 # Create a simulation with two rods
 temperature = 0.01
