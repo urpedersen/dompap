@@ -21,7 +21,7 @@ sim.set_random_velocities(temperature=temperature * 2)
 sim.set_pair_potential(pair_potential_str='4*(r**-12-r**-6)', r_cut=2.5)
 sim.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
 sim.set_neighbor_list(skin=0.6, max_number_of_neighbors=128)
-sim.set_integrator(time_step=0.004, target_temperature=temperature, temperature_damping_time=2.0)
+sim.set_integrator(time_step=0.004, target_temperature=temperature, temperature_damping_time=0.1)
 
 # Equilibrate
 print('Equilibrating...')
