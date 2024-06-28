@@ -2,16 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from dompap import Simulation
-from dompap.tools import autotune
 
-# Setup Lennard-Jones simulation
+# Setup simulation
 sim = Simulation()
-fcc_unit_cell = np.array([
+fcc_unit_cell = (
     (0.0, 0.0, 0.0),
     (0.5, 0.5, 0.0),
     (0.5, 0.0, 0.5),
     (0.0, 0.5, 0.5)
-], dtype=np.float64)
+)
 temperature = 0.8
 sim.set_positions(unit_cell_coordinates=fcc_unit_cell, cells=(5, 5, 5))
 specific_volume = 1.0277
@@ -25,48 +24,33 @@ sim.set_neighbor_list(skin=0.6, max_number_of_neighbors=128)
 sim.set_integrator(time_step=0.004, target_temperature=temperature, temperature_damping_time=2.0)
 
 # Equilibrate
-sim.run(1000)
+steps_for_equilibration = 1000
+sim.run(steps_for_equilibration)
 
 # Run simulation
 times = []
-E_pots = []
 T_confs = []
 T_kins = []
-pressures = []
 N = sim.get_number_of_particles()
 steps = 1000
+num_points = 100
 for step in range(steps):
-    if step % (steps // 100) == 0:
-        times.append(sim.get_time())
-        pressure = sim.get_pressure()
-        print(f'Pressure: {pressure}')
-        pressures.append(pressure)
+    if step % (steps // num_points) == 0:
         print(f'  Step {step}:')
-        E_pot = sim.get_potential_energy()
-        E_pots.append(E_pot)
-        print(f'Energy per particle         : {E_pot / N}')
+        times.append(sim.get_time())
         T_conf = sim.get_configurational_temperature()
         T_confs.append(T_conf)
-        print(f'Configurational temperature : {T_conf}')
         T_kin = sim.get_temperature()
         T_kins.append(T_kin)
-        print(f'Kinetic temperature         : {sim.get_temperature()}')
-
+        print(f'{T_conf = }, {T_kin = }')
     sim.step()
 
 # Print summary statistics
-print(f'Average potential energy per particle: U = {np.mean(E_pots) / N}')
-expected_potential_energy = -4.953 - 0.8 * 3 / 2
-print(f'{expected_potential_energy = }')
-print(f'Pressure = {np.mean(pressures)}')
-expected_pressure = 2.185
-print(f'{expected_pressure = }')
 print(f'Average configurational temperature: T_c = {np.mean(T_confs)}')
 print(f'Average kinetic temperature: T_k = {np.mean(T_kins)}')
 print(f'T_k/T_c ratio: {np.mean(T_kins) / np.mean(T_confs)}')
 
 # Print standard deviations
-print(f'Standard deviation of potential energy per particle: U = {np.std(E_pots) / N}')
 print(f'Standard deviation of configurational temperature: T_c = {np.std(T_confs)}')
 print(f'Standard deviation of kinetic temperature: T_k = {np.std(T_kins)}')
 
