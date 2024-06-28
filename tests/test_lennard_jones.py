@@ -29,8 +29,8 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
     sim.set_integrator(time_step=0.004, target_temperature=target_temperature, temperature_damping_time=0.1)
 
     # Set simulation parameters
-    steps = 40  # Number of steps to run
-    number_of_evaluations = 10  # Number of evaluations
+    steps = 200  # Number of steps to run
+    number_of_evaluations = 200  # Number of evaluations
     stride = steps // number_of_evaluations  # Stride between evaluations
 
     # Run simulation
@@ -46,14 +46,15 @@ def run_simulation(sim, target_temperature=0.8, verbose=False):
                  sim.get_temperature(),
                  sim.get_kinetic_energy() / N,
                  sim.get_virial() / N,
-                 sim.get_pressure()])
+                 sim.get_pressure(),
+                 sim.get_configurational_temperature()])
         sim.step()
 
     if verbose:
         progress_bar(steps, steps, stride, finalize=True)
 
     # Convert data to pandas DataFrame
-    columns = ['time', 'potential_energy', 'temperature', 'kinetic_energy', 'virial', 'pressure']
+    columns = ['time', 'potential_energy', 'temperature', 'kinetic_energy', 'virial', 'pressure', 'configurational_temperature']
     df = pd.DataFrame(data=thermodynamic_data, columns=columns)
 
     # Compute derivatives
@@ -98,36 +99,56 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
         print(f'Production run')
     sim, df = run_simulation(sim, verbose=verbose)  # Production run
 
-    print(f'{df["potential_energy"].mean()=}')
-    print(f'{df["kinetic_energy"].mean()=}')
-    print(f'{df["virial"].mean()=}')
-    print(f'{df["temperature"].mean()=}')
-    print(f'{df["pressure"].mean()=}')
-    print(f'{sim.get_volume()=}')
-    print(f'{sim.get_number_of_particles()=}')
+    if verbose:
+        print(f'{df["potential_energy"].mean()=}')
+        print(f'{df["kinetic_energy"].mean()=}')
+        print(f'{df["virial"].mean()=}')
+        print(f'{df["temperature"].mean()=}')
+        print(f'{df["pressure"].mean()=}')
+        print(f'{df["configurational_temperature"].mean()=}')
+        print(f'{sim.get_volume()=}')
+        print(f'{sim.get_number_of_particles()=}')
+
+    average_temperature = df['temperature'].mean()
+    expected_temperature = 0.8
+    tolerance = 0.1 * expected_temperature
+    if verbose:
+        print(f'{average_temperature=} {expected_temperature=}')
+    assert expected_temperature - tolerance < average_temperature < expected_temperature + tolerance
+
+    average_configurational_temperature = df['configurational_temperature'].mean()
+    expected_configurational_temperature = expected_temperature
+    tolerance = 0.1 * expected_configurational_temperature
+    if verbose:
+        print(f'{average_configurational_temperature=} {expected_configurational_temperature=}')
+    assert expected_configurational_temperature - tolerance < average_configurational_temperature < expected_configurational_temperature + tolerance
 
     average_kinetic_energy = df['kinetic_energy'].mean()
     expected_kinetic_energy = 0.8 * 3 / 2
     tolerance = 0.1 * expected_kinetic_energy
-    print(f'{average_kinetic_energy=} {expected_kinetic_energy=}')
+    if verbose:
+        print(f'{average_kinetic_energy=} {expected_kinetic_energy=}')
     assert expected_kinetic_energy - tolerance < average_kinetic_energy < expected_kinetic_energy + tolerance
 
     average_pressure = df['pressure'].mean()
     expected_pressure = 2.185
     tolerance = 0.1 * expected_pressure
-    print(f'{average_pressure=} {expected_pressure=}')
+    if verbose:
+        print(f'{average_pressure=} {expected_pressure=}')
     assert expected_pressure - tolerance < average_pressure < expected_pressure + tolerance
 
     average_potential_energy = df['potential_energy'].mean()
     expected_potential_energy = -4.953 - 0.8 * 3 / 2
     tolerance = 0.5
-    print(f'{average_potential_energy=} {expected_potential_energy=}')
+    if verbose:
+        print(f'{average_potential_energy=} {expected_potential_energy=}')
     assert expected_potential_energy - tolerance < average_potential_energy < expected_potential_energy + tolerance
 
     average_energy = df['potential_energy'].mean() + df['kinetic_energy'].mean()
     expected_energy = -4.953
     tolerance = 0.5
-    print(f'{average_energy=} {expected_energy=}')
+    if verbose:
+        print(f'{average_energy=} {expected_energy=}')
     assert expected_energy - tolerance < average_energy < expected_energy + tolerance
 
     if plot:
@@ -158,12 +179,16 @@ def test_lennard_jones_crystal(verbose=False, plot=False):
         plt.figure(figsize=(6, 10))
         plt.subplot(4, 1, 1)
         plt.plot(df['time'], df['potential_energy'])
+        plt.axhline(y=expected_potential_energy, color='r', linestyle='--')
         plt.ylabel('Potential energy')
         plt.subplot(4, 1, 2)
         plt.plot(df['time'], df['temperature'])
-        plt.ylabel('Temperature')
+        plt.plot(df['time'], df['configurational_temperature'], '--')
+        plt.axhline(y=expected_temperature, color='r', linestyle='--')
+        plt.ylabel(r'Temperature (dashed: $T_{conf}$)')
         plt.subplot(4, 1, 3)
         plt.plot(df['time'], df['pressure'])
+        plt.axhline(y=expected_pressure, color='r', linestyle='--')
         plt.ylabel('Pressure')
         plt.subplot(4, 1, 4)
         plt.plot(df['time'], df['virial'])
