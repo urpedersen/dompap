@@ -8,7 +8,7 @@ from dompap.positions import get_displacement_vector
 
 
 @numba.njit
-def harmonic_repulsion_pot(r):
+def harmonic_repulsion_pot(r: float) -> float:
     if r < 1:
         return 0.5 * (1 - r) ** 2
     else:
@@ -16,7 +16,7 @@ def harmonic_repulsion_pot(r):
 
 
 @numba.njit
-def harmonic_repulsion_force(r):
+def harmonic_repulsion_force(r: float) -> float:
     if r < 1:
         return 1 - r
     else:
@@ -24,48 +24,58 @@ def harmonic_repulsion_force(r):
 
 
 @numba.njit
-def harmonic_repulsion_curvature(r):
+def harmonic_repulsion_curvature(r: float) -> float:
     return 0.0
 
 
 hardcoded_pair_potentials = {
     # Name: (pair_potential_str, energy, force, r_cut)
-    'Harmonic repulsive': ('0.5*(1-r)**2',
-                           harmonic_repulsion_pot,
-                           harmonic_repulsion_force,
-                           harmonic_repulsion_curvature,
-                           1.0)
+    "Harmonic repulsive": (
+        "0.5*(1-r)**2",
+        harmonic_repulsion_pot,
+        harmonic_repulsion_force,
+        harmonic_repulsion_curvature,
+        1.0,
+    )
 }
 
 
-def make_pair_potential(pair_potential_str='(((1-r)**2)**(1/2))**(7/2)', r_cut=1.0):
-    """ Make pair potential function, and its derivative """
-    r = sp.symbols('r')
+def make_pair_potential(
+    pair_potential_str="(((1-r)**2)**(1/2))**(7/2)", r_cut=1.0
+) -> (callable, callable, callable):
+    """Make pair potential function, and its derivative"""
+    r_sym = sp.symbols("r")
     # Define pair potential and force
     pair_potential = sp.sympify(pair_potential_str)
-    pair_force = sp.diff(-pair_potential, r)
-    pair_curvature = sp.diff(pair_potential, r, 2)
+    pair_force = sp.diff(-pair_potential, r_sym)
+    pair_curvature = sp.diff(pair_potential, r_sym, 2)
     # Lambdify to numpy functions
-    pair_potential = numba.njit(sp.lambdify(r, pair_potential, 'numpy'))
-    pair_force = numba.njit(sp.lambdify(r, pair_force, 'numpy'))
-    pair_curvature = numba.njit(sp.lambdify(r, pair_curvature, 'numpy'))
+    pair_potential = numba.njit(sp.lambdify(r_sym, pair_potential, "numpy"))
+    pair_force = numba.njit(sp.lambdify(r_sym, pair_force, "numpy"))
+    pair_curvature = numba.njit(sp.lambdify(r_sym, pair_curvature, "numpy"))
     # Shift and truncate at r_cut
-    pair_potential_shift = numba.njit(lambda r: pair_potential(r) - pair_potential(r_cut))
+    pair_potential_shift = numba.njit(
+        lambda r: pair_potential(r) - pair_potential(r_cut)
+    )
     # Let functions return zero if r > r_cut
-    pair_potential_cut = numba.njit(lambda r: np.where(r > r_cut, 0, pair_potential_shift(r)))
+    pair_potential_cut = numba.njit(
+        lambda r: np.where(r > r_cut, 0, pair_potential_shift(r))
+    )
     pair_force_cut = numba.njit(lambda r: np.where(r > r_cut, 0, pair_force(r)))
     pair_curvature_cut = numba.njit(lambda r: np.where(r > r_cut, 0, pair_curvature(r)))
     return pair_potential_cut, pair_force_cut, pair_curvature_cut
 
 
 @numba.njit
-def _get_total_energy(positions: np.ndarray,
-                      box_vectors: np.ndarray,
-                      pair_potential: callable,
-                      neighbor_list: np.ndarray,
-                      sigma_func: callable,
-                      epsilon_func: callable) -> float:
-    """ Get total energy of the system """
+def _get_total_energy(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_potential: callable,
+    neighbor_list: np.ndarray,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> float:
+    """Get total energy of the system"""
     dimension_of_space = positions.shape[1]
     energy: float = 0.0
     for n, position in enumerate(positions):
@@ -81,20 +91,24 @@ def _get_total_energy(positions: np.ndarray,
                     displacement[dim] -= box_vectors[dim]
                 elif displacement[dim] < -box_vectors[dim] / 2:
                     displacement[dim] += box_vectors[dim]
-            distance = np.sqrt(np.sum(displacement ** 2))
+            distance = np.sqrt(np.sum(displacement**2))
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
-            energy = energy + epsilon * pair_potential(distance / sigma).astype(np.float64)
+            energy = energy + epsilon * pair_potential(distance / sigma).astype(
+                np.float64
+            )
     return energy / 2
 
 
 @numba.njit(parallel=True)
-def _get_total_energy_double_loop(positions: np.ndarray,
-                                  box_vectors: np.ndarray,
-                                  pair_potential: callable,
-                                  sigma_func: callable,
-                                  epsilon_func: callable) -> float:
-    """ Get total energy of the system using double loop """
+def _get_total_energy_double_loop(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_potential: callable,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> float:
+    """Get total energy of the system using double loop"""
     dimension_of_space = positions.shape[1]
     energy: float = 0.0
     number_of_particles = positions.shape[0]
@@ -107,20 +121,24 @@ def _get_total_energy_double_loop(positions: np.ndarray,
                     displacement[dim] -= box_vectors[dim]
                 elif displacement[dim] < -box_vectors[dim] / 2:
                     displacement[dim] += box_vectors[dim]
-            distance = np.sqrt(np.sum(displacement ** 2))
+            distance = np.sqrt(np.sum(displacement**2))
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
-            energy = energy + epsilon * pair_potential(distance / sigma).astype(np.float64)
+            energy = energy + epsilon * pair_potential(distance / sigma).astype(
+                np.float64
+            )
     return energy
 
 
 @numba.njit
-def _get_total_energy_double_loop_single_core(positions: np.ndarray,
-                                              box_vectors: np.ndarray,
-                                              pair_potential: callable,
-                                              sigma_func: callable,
-                                              epsilon_func: callable) -> float:
-    """ Get total energy of the system using double loop """
+def _get_total_energy_double_loop_single_core(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_potential: callable,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> float:
+    """Get total energy of the system using double loop"""
     dimension_of_space = positions.shape[1]
     energy: float = 0.0
     number_of_particles = positions.shape[0]
@@ -133,21 +151,25 @@ def _get_total_energy_double_loop_single_core(positions: np.ndarray,
                     displacement[dim] -= box_vectors[dim]
                 elif displacement[dim] < -box_vectors[dim] / 2:
                     displacement[dim] += box_vectors[dim]
-            distance = np.sqrt(np.sum(displacement ** 2))
+            distance = np.sqrt(np.sum(displacement**2))
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
-            energy = energy + epsilon * pair_potential(distance / sigma).astype(np.float64)
+            energy = energy + epsilon * pair_potential(distance / sigma).astype(
+                np.float64
+            )
     return energy
 
 
 @numba.njit(parallel=True)
-def _get_forces(positions: np.ndarray,
-                box_vectors: np.ndarray,
-                pair_force: callable,
-                neighbor_list: np.ndarray,
-                sigma_func: callable,
-                epsilon_func: callable) -> np.ndarray:
-    """ Get forces on all particles """
+def _get_forces(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_force: callable,
+    neighbor_list: np.ndarray,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> np.ndarray:
+    """Get forces on all particles"""
     forces = np.zeros(shape=positions.shape, dtype=np.float64)
     number_of_particles = positions.shape[0]
     for n in numba.prange(number_of_particles):
@@ -157,7 +179,7 @@ def _get_forces(positions: np.ndarray,
                 break
             position_m = positions[m]
             displacement = get_displacement_vector(positions_n, position_m, box_vectors)
-            distance = np.sum(displacement ** 2) ** 0.5
+            distance = np.sum(displacement**2) ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
@@ -167,18 +189,22 @@ def _get_forces(positions: np.ndarray,
 
 
 @numba.njit
-def _get_forces_double_loop_single_core(positions: np.ndarray,
-                                        box_vectors: np.ndarray,
-                                        pair_force: callable,
-                                        sigma_func: callable,
-                                        epsilon_func: callable) -> np.ndarray:
-    """ Get forces on all particles using double loop """
+def _get_forces_double_loop_single_core(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_force: callable,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> np.ndarray:
+    """Get forces on all particles using double loop"""
     forces = np.zeros(shape=positions.shape, dtype=np.float64)
     number_of_particles = positions.shape[0]
     for n in range(number_of_particles - 1):
         for m in range(n + 1, number_of_particles):
-            displacement = get_displacement_vector(positions[n], positions[m], box_vectors)
-            distance = np.sum(displacement ** 2) ** 0.5
+            displacement = get_displacement_vector(
+                positions[n], positions[m], box_vectors
+            )
+            distance = np.sum(displacement**2) ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
@@ -189,13 +215,14 @@ def _get_forces_double_loop_single_core(positions: np.ndarray,
 
 
 @numba.njit(parallel=True)
-def _get_forces_double_loop(positions: np.ndarray,
-                            box_vectors: np.ndarray,
-                            pair_force: callable,
-                            sigma_func: callable,
-                            epsilon_func: callable
-                            ) -> np.ndarray:
-    """ Get forces on all particles using double loop """
+def _get_forces_double_loop(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_force: callable,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> np.ndarray:
+    """Get forces on all particles using double loop"""
     forces = np.zeros(shape=positions.shape, dtype=np.float64)
     number_of_particles = positions.shape[0]
     for n in numba.prange(number_of_particles):
@@ -213,7 +240,7 @@ def _get_forces_double_loop(positions: np.ndarray,
                 elif displacement[d] < -box_vectors[d] / 2:
                     displacement[d] += box_vectors[d]
                 distance += displacement[d] ** 2
-            distance = distance ** 0.5
+            distance = distance**0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
@@ -224,25 +251,27 @@ def _get_forces_double_loop(positions: np.ndarray,
 
 
 @numba.njit(parallel=True)
-def _get_virial_double_loop(positions: np.ndarray,
-                            box_vectors: np.ndarray,
-                            pair_force: callable,
-                            sigma_func: callable,
-                            epsilon_func: callable) -> np.float64:
-    """ Get (pair ) virial of the system using a double loop """
+def _get_virial_double_loop(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_force: callable,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> np.float64:
+    """Get (pair ) virial of the system using a double loop"""
     num_particles = positions.shape[0]
     dimension_of_space = positions.shape[1]
     virial: np.float64 = np.float64(0.0)
     for n in numba.prange(num_particles - 1):
         for m in range(n + 1, num_particles):
-            displacement: np.float64 = positions[n] - positions[m]
+            displacement = positions[n] - positions[m]
             # Periodic boundary conditions
             for d in range(dimension_of_space):
                 if displacement[d] > box_vectors[d] / 2:
                     displacement[d] -= box_vectors[d]
                 elif displacement[d] < -box_vectors[d] / 2:
                     displacement[d] += box_vectors[d]
-            distance = np.sum(displacement ** 2) ** 0.5
+            distance = np.sum(displacement**2) ** 0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
@@ -251,8 +280,10 @@ def _get_virial_double_loop(positions: np.ndarray,
 
 
 @lru_cache
-def from_func_to_array(func: callable, num_particles: int, dtype=np.float64) -> np.ndarray:
-    """ Convert a function to an array by evaluating it at all combinations of indices """
+def from_func_to_array(
+    func: callable, num_particles: int, dtype=np.float64
+) -> np.ndarray:
+    """Convert a function to an array by evaluating it at all combinations of indices"""
     # Initialize an empty array of the desired shape
     array = np.empty((num_particles, num_particles), dtype=dtype)
 
@@ -264,19 +295,27 @@ def from_func_to_array(func: callable, num_particles: int, dtype=np.float64) -> 
     return array
 
 
-def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsilon_func):
-    """ Get forces on all particles using vectorized operations.
-    This implementation uses only NumPy, no Numba. """
+def _get_forces_vectorized(
+    positions, box_vectors, pair_force, sigma_func, epsilon_func
+):
+    """Get forces on all particles using vectorized operations.
+    This implementation uses only NumPy, no Numba."""
     displacement_vectors = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
     for dim in range(positions.shape[1]):
-        displacement_vectors[:, :, dim] = np.where(displacement_vectors[:, :, dim] > box_vectors[dim] / 2,
-                                                   displacement_vectors[:, :, dim] - box_vectors[dim],
-                                                   displacement_vectors[:, :, dim])
-        displacement_vectors[:, :, dim] = np.where(displacement_vectors[:, :, dim] < -box_vectors[dim] / 2,
-                                                   displacement_vectors[:, :, dim] + box_vectors[dim],
-                                                   displacement_vectors[:, :, dim])
-    distances = np.sum(displacement_vectors ** 2, axis=2) ** 0.5
-    np.fill_diagonal(distances, np.inf)  # Set diagonal to infinity to avoid division by zero
+        displacement_vectors[:, :, dim] = np.where(
+            displacement_vectors[:, :, dim] > box_vectors[dim] / 2,
+            displacement_vectors[:, :, dim] - box_vectors[dim],
+            displacement_vectors[:, :, dim],
+        )
+        displacement_vectors[:, :, dim] = np.where(
+            displacement_vectors[:, :, dim] < -box_vectors[dim] / 2,
+            displacement_vectors[:, :, dim] + box_vectors[dim],
+            displacement_vectors[:, :, dim],
+        )
+    distances = np.sum(displacement_vectors**2, axis=2) ** 0.5
+    np.fill_diagonal(
+        distances, np.inf
+    )  # Set diagonal to infinity to avoid division by zero
     sigmas = from_func_to_array(sigma_func, positions.shape[0])
     epsilons = from_func_to_array(epsilon_func, positions.shape[0])
     scalar_forces = epsilons * pair_force(distances / sigmas)
@@ -286,14 +325,16 @@ def _get_forces_vectorized(positions, box_vectors, pair_force, sigma_func, epsil
 
 
 @numba.njit(parallel=True)
-def _get_laplacian(positions: np.ndarray,
-                   box_vectors: np.ndarray,
-                   pair_force: callable,
-                   pair_curvature: callable,
-                   neighbor_list: np.ndarray,
-                   sigma_func: callable,
-                   epsilon_func: callable) -> np.ndarray:
-    """ Return the Laplacian of for each particle """
+def _get_laplacian(
+    positions: np.ndarray,
+    box_vectors: np.ndarray,
+    pair_force: callable,
+    pair_curvature: callable,
+    neighbor_list: np.ndarray,
+    sigma_func: callable,
+    epsilon_func: callable,
+) -> np.ndarray:
+    """Return the Laplacian of for each particle"""
     number_of_particles = positions.shape[0]
     laplacians = np.zeros(number_of_particles, dtype=np.float64)
     dimension_of_space = positions.shape[1]
@@ -312,12 +353,12 @@ def _get_laplacian(positions: np.ndarray,
                 elif displacement[d] < -box_vectors[d] / 2:
                     displacement[d] += box_vectors[d]
                 distance += displacement[d] ** 2
-            distance = distance ** 0.5
+            distance = distance**0.5
             sigma = sigma_func(n, m)
             epsilon = epsilon_func(n, m)
             scalar_force = epsilon * pair_force(distance / sigma)
             dv_dr = -scalar_force
-            dv2_dr2 = epsilon * pair_curvature(distance / sigma)
-            this_lap += dv2_dr2 + (dimension_of_space-1)*dv_dr/distance
+            d2v_dr2 = epsilon * pair_curvature(distance / sigma)
+            this_lap += d2v_dr2 + (dimension_of_space - 1) * dv_dr / distance
         laplacians[n] = this_lap
     return laplacians

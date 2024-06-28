@@ -4,9 +4,10 @@ from scipy.special import gamma
 
 
 @numba.njit
-def get_displacement_vector(position: np.ndarray, other_position: np.ndarray,
-                            box_vectors: np.ndarray) -> np.ndarray:
-    """ Calculate displacement vector considering periodic boundary conditions for any number of dimensions."""
+def get_displacement_vector(
+    position: np.ndarray, other_position: np.ndarray, box_vectors: np.ndarray
+) -> np.ndarray:
+    """Calculate displacement vector considering periodic boundary conditions for any number of dimensions."""
     displacement = position - other_position
     for dim in range(len(position)):
         if displacement[dim] > box_vectors[dim] / 2:
@@ -17,26 +18,36 @@ def get_displacement_vector(position: np.ndarray, other_position: np.ndarray,
 
 
 @numba.njit
-def get_distance(position: np.ndarray, other_position: np.ndarray, box_vectors: np.ndarray) -> float:
-    displacement: np.ndarray = get_displacement_vector(position, other_position, box_vectors)
-    distances: float = np.zeros(shape=(len(position),), dtype=np.float64)
+def get_distance(
+    position: np.ndarray, other_position: np.ndarray, box_vectors: np.ndarray
+) -> float:
+    displacement: np.ndarray = get_displacement_vector(
+        position, other_position, box_vectors
+    )
+    distances = np.zeros(shape=(len(position),), dtype=np.float64)
     for dim in range(len(position)):
         distances[dim] = displacement[dim] ** 2
     return np.sqrt(np.sum(distances))
 
 
-def generate_positions(unit_cell_coordinates: np.ndarray,
-                       cells: np.ndarray,
-                       lattice_constants: np.ndarray) -> np.ndarray:
+def generate_positions(
+    unit_cell_coordinates: np.ndarray, cells: np.ndarray, lattice_constants: np.ndarray
+) -> np.ndarray:
     spatial_dimension = unit_cell_coordinates.shape[1]
     number_of_particles = unit_cell_coordinates.shape[0]
     number_of_cells = np.prod(cells)
-    positions = np.zeros(shape=(number_of_cells * number_of_particles, spatial_dimension), dtype=np.float64)
+    positions = np.zeros(
+        shape=(number_of_cells * number_of_particles, spatial_dimension),
+        dtype=np.float64,
+    )
     for cell_index in range(number_of_cells):
-        cell_coordinates = np.array(np.unravel_index(cell_index, cells), dtype=np.float64)
+        cell_coordinates = np.array(
+            np.unravel_index(cell_index, cells), dtype=np.float64
+        )
         for particle_index in range(number_of_particles):
-            positions[cell_index * number_of_particles + particle_index] = unit_cell_coordinates[
-                                                                               particle_index] + cell_coordinates
+            positions[cell_index * number_of_particles + particle_index] = (
+                unit_cell_coordinates[particle_index] + cell_coordinates
+            )
     positions *= lattice_constants
     return positions
 
@@ -44,11 +55,13 @@ def generate_positions(unit_cell_coordinates: np.ndarray,
 import numpy as np
 
 
-def get_radial_distribution_function(positions_n: np.ndarray,
-                                     positions_m: np.ndarray,
-                                     box_vectors: np.ndarray,
-                                     r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
-    """ Compute radial distribution function between two sets of positions."""
+def get_radial_distribution_function(
+    positions_n: np.ndarray,
+    positions_m: np.ndarray,
+    box_vectors: np.ndarray,
+    r_bins: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute radial distribution function between two sets of positions."""
     if not np.all(np.diff(r_bins) >= 0):
         raise ValueError("r_bins array must be sorted in ascending order.")
 
@@ -74,8 +87,12 @@ def get_radial_distribution_function(positions_n: np.ndarray,
     return pair_distances, radial_distribution
 
 
-def wrap_into_box(positions: np.ndarray, image_positions: np.ndarray, box_vectors: np.ndarray):
-    """ Wrap positions into box """
-    shift: np.ndarray = np.floor(positions / box_vectors[np.newaxis, :], dtype=np.float64)
+def wrap_into_box(
+    positions: np.ndarray, image_positions: np.ndarray, box_vectors: np.ndarray
+):
+    """Wrap positions into box"""
+    shift: np.ndarray = np.floor(
+        positions / box_vectors[np.newaxis, :], dtype=np.float64
+    )
     image_positions += shift.astype(np.int32)
     positions -= shift * box_vectors[np.newaxis, :]

@@ -15,8 +15,10 @@ def default_particle_types():
 
 
 def default_positions():
-    """ Setup 5x5x5 simple cubic lattice """
-    positions = np.zeros(shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.float64)
+    """Setup 5x5x5 simple cubic lattice"""
+    positions = np.zeros(
+        shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.float64
+    )
     for i in range(5):
         for j in range(5):
             for k in range(5):
@@ -30,16 +32,24 @@ def default_box_vectors():
 
 
 def default_image_positions():
-    return np.zeros(shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.int32)
+    return np.zeros(
+        shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.int32
+    )
 
 
 def default_velocities():
-    """ Random velocities from Normal distribution with variance 1 """
-    return np.random.normal(loc=0.0, scale=1.0, size=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION))
+    """Random velocities from Normal distribution with variance 1"""
+    return np.random.normal(
+        loc=0.0,
+        scale=1.0,
+        size=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION),
+    )
 
 
 def default_betas():
-    return np.zeros(shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.float64)
+    return np.zeros(
+        shape=(DEFAULT_NUMBER_OF_PARTICLES, DEFAULT_SPATIAL_DIMENSION), dtype=np.float64
+    )
 
 
 def default_masses():
@@ -87,6 +97,7 @@ class Simulation:
             box_vectors: [5. 5. 5.]
             masses: [[1.]] ... [[1.]]
     """
+
     # System properties
     particle_types: np.ndarray = field(default_factory=default_particle_types)
     positions: np.ndarray = field(default_factory=default_positions)
@@ -109,12 +120,17 @@ class Simulation:
     number_of_neighbor_list_updates: int = 0
 
     # Selecting Algorithms
-    energy_method_str = 'neighbor list'
-    force_method_str = 'neighbor list'
-    neighbor_list_method_str = 'double loop'
-    _KNOWN_ENERGY_METHODS = {'neighbor list', 'double loop', 'double loop single core'}
-    _KNOWN_FORCE_METHODS = {'neighbor list', 'double loop', 'double loop single core', 'vectorized'}
-    _KNOWN_CELL_LIST_METHODS = {'cell list', 'double loop'}
+    energy_method_str = "neighbor list"
+    force_method_str = "neighbor list"
+    neighbor_list_method_str = "double loop"
+    _KNOWN_ENERGY_METHODS = {"neighbor list", "double loop", "double loop single core"}
+    _KNOWN_FORCE_METHODS = {
+        "neighbor list",
+        "double loop",
+        "double loop single core",
+        "vectorized",
+    }
+    _KNOWN_CELL_LIST_METHODS = {"cell list", "double loop"}
 
     # Simulation parameters
     number_of_steps: int = 0
@@ -131,20 +147,20 @@ class Simulation:
     sigma_func: callable = field(default_factory=default_func_n_m)
 
     def __post_init__(self):
-        """ Setup neighbor list """
+        """Setup neighbor list"""
         self.set_pair_potential()
         self.set_pair_potential_parameters(sigma=1.0, epsilon=1.0)
         self.set_neighbor_list()
 
     def __str__(self):
-        """ Print only first there and last three particles """
+        """Print only first there and last three particles"""
         return f"""Simulation:
     positions: {self.positions[:1]} ... {self.positions[-1:]}
     box_vectors: {self.box_vectors}
     masses: {self.masses[:1]} ... {self.masses[-1:]}"""
 
     def copy(self):
-        """ Make a deep copy of the simulation
+        """Make a deep copy of the simulation
 
         Examples
         --------
@@ -167,11 +183,16 @@ class Simulation:
              [0. 0. 2.]]
         """
         from copy import deepcopy
+
         return deepcopy(self)
 
-    def set_positions(self, unit_cell_coordinates: tuple = ([0.0, 0.0, 0.0],), cells: tuple = (5, 5, 5),
-                      lattice_constants: tuple = (1.0, 1.0, 1.0)):
-        """ Set positions of particles
+    def set_positions(
+        self,
+        unit_cell_coordinates: tuple = ([0.0, 0.0, 0.0],),
+        cells: tuple = (5, 5, 5),
+        lattice_constants: tuple = (1.0, 1.0, 1.0),
+    ):
+        """Set positions of particles
 
         Examples
         --------
@@ -187,20 +208,29 @@ class Simulation:
              [0. 0. 4.]]
         """
         from .positions import generate_positions
+
         unit_cell_coordinates = np.array(unit_cell_coordinates, dtype=np.float64)
         cells = np.array(cells, dtype=np.int32)
         lattice_constants = np.array(lattice_constants, dtype=np.float64)
-        self.box_vectors = np.array(cells, dtype=np.float64) * np.array(lattice_constants, dtype=np.float64)
-        self.positions = generate_positions(unit_cell_coordinates, cells, lattice_constants)
-        self.image_positions = np.zeros(shape=(self.positions.shape[0], self.positions.shape[1]), dtype=np.int32)
+        self.box_vectors = np.array(cells, dtype=np.float64) * np.array(
+            lattice_constants, dtype=np.float64
+        )
+        self.positions = generate_positions(
+            unit_cell_coordinates, cells, lattice_constants
+        )
+        self.image_positions = np.zeros(
+            shape=(self.positions.shape[0], self.positions.shape[1]), dtype=np.int32
+        )
         # Set betas and velocities if shape is not correct
         if self.betas.shape != self.positions.shape:
             self.betas = np.zeros(shape=self.positions.shape, dtype=np.float64)
         if self.velocities.shape != self.positions.shape:
-            self.velocities = np.random.normal(loc=0.0, scale=1.0, size=self.positions.shape).astype(np.float64)
+            self.velocities = np.random.normal(
+                loc=0.0, scale=1.0, size=self.positions.shape
+            ).astype(np.float64)
 
     def set_masses(self, masses: float | list | np.ndarray = 1.0):
-        """ Set masses of particles.
+        """Set masses of particles.
 
         The masses can be given as a float, list or ndarray.
 
@@ -226,7 +256,9 @@ class Simulation:
         """
         # If type is float, set all masses to the same value
         if isinstance(masses, float) or isinstance(masses, int):
-            self.masses = np.ones(shape=(self.positions.shape[0], 1), dtype=np.float64) * np.float64(masses)
+            self.masses = np.ones(
+                shape=(self.positions.shape[0], 1), dtype=np.float64
+            ) * np.float64(masses)
         # If type is list, set masses to the values in the list
         elif isinstance(masses, list):
             self.masses = np.array(masses, dtype=np.float64).reshape(-1, 1)
@@ -234,15 +266,17 @@ class Simulation:
         elif isinstance(masses, np.ndarray):
             self.masses = masses.reshape(-1, 1)
         else:
-            raise ValueError(f'Unknown type of masses: {type(masses)}')
+            raise ValueError(f"Unknown type of masses: {type(masses)}")
         expected_shape = (self.positions.shape[0], 1)
         if self.masses.shape != expected_shape:
-            raise ValueError(f'Expected shape of masses: {expected_shape}, got: {self.masses.shape}')
+            raise ValueError(
+                f"Expected shape of masses: {expected_shape}, got: {self.masses.shape}"
+            )
         if self.masses.shape != self.particle_types.shape:
             self.particle_types = np.zeros(shape=self.masses.shape, dtype=np.int32)
 
     def set_random_velocities(self, temperature: float = 1.0):
-        """ Set velocities from Normal distribution with variance temperature / mass
+        """Set velocities from Normal distribution with variance temperature / mass
 
         Examples
         --------
@@ -251,22 +285,32 @@ class Simulation:
             >>> sim = Simulation()
             >>> sim.set_random_velocities(temperature=1.0)
         """
-        self.velocities = np.random.normal(loc=0.0, scale=np.sqrt(temperature / self.masses),
-                                           size=self.positions.shape).astype(np.float64)
+        self.velocities = np.random.normal(
+            loc=0.0, scale=np.sqrt(temperature / self.masses), size=self.positions.shape
+        ).astype(np.float64)
 
     def set_types(self, types: int | list = 0):
         if isinstance(types, int):
-            self.particle_types = np.ones(shape=(self.positions.shape[0], 1), dtype=np.int32) * np.int32(types)
+            self.particle_types = np.ones(
+                shape=(self.positions.shape[0], 1), dtype=np.int32
+            ) * np.int32(types)
         elif isinstance(types, list):
             self.particle_types = np.array(types, dtype=np.int32).reshape(-1, 1)
         else:
-            raise ValueError(f'Unknown type of types: {type(types)}')
+            raise ValueError(f"Unknown type of types: {type(types)}")
         expected_shape = (self.positions.shape[0], 1)
         if self.particle_types.shape != expected_shape:
-            raise ValueError(f'Expected shape of types is {expected_shape} but got {self.particle_types.shape}')
+            raise ValueError(
+                f"Expected shape of types is {expected_shape} but got {self.particle_types.shape}"
+            )
 
-    def set_neighbor_list(self, skin: float = None, max_number_of_neighbors: int = None, method_str=None):
-        """ Update neighbour list
+    def set_neighbor_list(
+        self,
+        skin: float = None,
+        max_number_of_neighbors: int = None,
+        method_str: None | str = None,
+    ) -> None:
+        """Update neighbour list
 
         Parameters
         ----------
@@ -295,7 +339,9 @@ class Simulation:
             self.max_number_of_neighbors = np.int32(max_number_of_neighbors)
         if method_str is not None:
             if method_str not in self._KNOWN_CELL_LIST_METHODS:
-                raise ValueError(f'Unknown neighbor list method: {method_str}. Try: {self._KNOWN_CELL_LIST_METHODS}.')
+                raise ValueError(
+                    f"Unknown neighbor list method: {method_str}. Try: {self._KNOWN_CELL_LIST_METHODS}."
+                )
             self.neighbor_list_method_str = method_str
         # Get largest possible sigma
         number_of_particles = self.positions.shape[0]
@@ -309,25 +355,33 @@ class Simulation:
         box_vectors = self.box_vectors
         cutoff_distance = global_truncation_distance + self.neighbor_list_skin
         max_number_of_neighbours = self.max_number_of_neighbors
-        if self.neighbor_list_method_str == 'cell list':
+        if self.neighbor_list_method_str == "cell list":
             if self.get_dimensions_of_space() == 3:
                 from .neighbor_list import get_neighbor_list_cell_list_3d
-                self.neighbor_list = get_neighbor_list_cell_list_3d(positions, box_vectors, cutoff_distance,
-                                                                    max_number_of_neighbours)
+
+                self.neighbor_list = get_neighbor_list_cell_list_3d(
+                    positions, box_vectors, cutoff_distance, max_number_of_neighbours
+                )
             else:
                 from .neighbor_list import get_neighbor_list_cell_list
-                self.neighbor_list = get_neighbor_list_cell_list(positions, box_vectors, cutoff_distance,
-                                                                 max_number_of_neighbours)
-        elif self.neighbor_list_method_str == 'double loop':
+
+                self.neighbor_list = get_neighbor_list_cell_list(
+                    positions, box_vectors, cutoff_distance, max_number_of_neighbours
+                )
+        elif self.neighbor_list_method_str == "double loop":
             from .neighbor_list import get_neighbor_list_double_loop
-            self.neighbor_list = get_neighbor_list_double_loop(positions, box_vectors, cutoff_distance,
-                                                               max_number_of_neighbours)
+
+            self.neighbor_list = get_neighbor_list_double_loop(
+                positions, box_vectors, cutoff_distance, max_number_of_neighbours
+            )
         else:
-            raise ValueError(f'Unknown neighbor list method: {self.neighbor_list_method_str}')
+            raise ValueError(
+                f"Unknown neighbor list method: {self.neighbor_list_method_str}"
+            )
         self.positions_neighbour_list = self.positions.copy()
 
-    def update_neighbor_list(self, check=True):
-        """ Update neighbour list if needed
+    def update_neighbor_list(self, check=True) -> None:
+        """Update neighbour list if needed
 
         Parameters
         ----------
@@ -336,14 +390,24 @@ class Simulation:
 
         """
         from .neighbor_list import neighbor_list_is_old
-        if check and not neighbor_list_is_old(self.positions, self.positions_neighbour_list, self.box_vectors,
-                                              self.neighbor_list_skin):
+
+        if check and not neighbor_list_is_old(
+            self.positions,
+            self.positions_neighbour_list,
+            self.box_vectors,
+            self.neighbor_list_skin,
+        ):
             return
         self.set_neighbor_list()
 
-    def set_pair_potential(self, pair_potential_str: str = '(1-r)**2', r_cut: float = 1.0,
-                           force_method=None, energy_method=None):
-        """ Set pair potential.py and force
+    def set_pair_potential(
+        self,
+        pair_potential_str: str = "(1-r)**2",
+        r_cut: float = 1.0,
+        force_method=None,
+        energy_method=None,
+    ) -> None:
+        """Set pair potential.py and force
 
         Parameters
         ----------
@@ -366,6 +430,7 @@ class Simulation:
         0.25
         """
         from .potential import hardcoded_pair_potentials
+
         if pair_potential_str in hardcoded_pair_potentials:
             self.pair_potential_str = hardcoded_pair_potentials[pair_potential_str][0]
             self.pair_potential = hardcoded_pair_potentials[pair_potential_str][1]
@@ -377,28 +442,34 @@ class Simulation:
 
         # If not hardcoded, make pair potential using SymPy
         from .potential import make_pair_potential
+
         self.pair_potential_str = pair_potential_str
         self.pair_potential_r_cut = np.float64(r_cut)
         self.pair_potential, self.pair_force, self.pair_curvature = make_pair_potential(
-            pair_potential_str=pair_potential_str,
-            r_cut=r_cut
+            pair_potential_str=pair_potential_str, r_cut=r_cut
         )
 
         # Set algorithm for energy and force
         if force_method is not None:
             if force_method not in self._KNOWN_FORCE_METHODS:
-                raise ValueError(f'Unknown force method: {force_method}. Try: {self._KNOWN_FORCE_METHODS}.')
+                raise ValueError(
+                    f"Unknown force method: {force_method}. Try: {self._KNOWN_FORCE_METHODS}."
+                )
             self.force_method_str = force_method
         if energy_method is not None:
             if energy_method not in self._KNOWN_ENERGY_METHODS:
-                raise ValueError(f'Unknown energy method: {energy_method}. Try: {self._KNOWN_ENERGY_METHODS}.')
+                raise ValueError(
+                    f"Unknown energy method: {energy_method}. Try: {self._KNOWN_ENERGY_METHODS}."
+                )
             self.energy_method_str = energy_method
 
         # Reset neighbor list
         self.set_neighbor_list()
 
-    def set_pair_potential_parameters(self, sigma: float = 1.0, epsilon: float = 1.0):
-        """ Set potential parameters.
+    def set_pair_potential_parameters(
+        self, sigma: float = 1.0, epsilon: float = 1.0
+    ) -> None:
+        """Set potential parameters.
 
         Give sigma and epsilon as floats or callables.
 
@@ -444,17 +515,17 @@ class Simulation:
         elif callable(sigma):
             self.sigma_func = numba.njit(sigma)
         else:
-            raise ValueError(f'Unknown type of sigma: {type(sigma)}')
+            raise ValueError(f"Unknown type of sigma: {type(sigma)}")
         if isinstance(epsilon, float):
             self.epsilon_func = numba.njit(lambda n, m: np.float64(epsilon))
         elif callable(epsilon):
             self.epsilon_func = numba.njit(epsilon)
         else:
-            raise ValueError(f'Unknown type of epsilon: {type(epsilon)}')
+            raise ValueError(f"Unknown type of epsilon: {type(epsilon)}")
         self.set_neighbor_list()  # Reset neighbor list since particle may have new interaction range.
 
-    def scale_box(self, scale_factor: float):
-        """ Scale box vectors and positions
+    def scale_box(self, scale_factor: float) -> None:
+        """Scale box vectors and positions
 
         Examples
         --------
@@ -471,8 +542,8 @@ class Simulation:
         self.positions = self.positions * scale_factor
         self.set_neighbor_list()
 
-    def get_potential_energy(self):
-        """ Get total energy of the system
+    def get_potential_energy(self) -> float:
+        """Get total energy of the system
 
         Examples
         --------
@@ -484,25 +555,44 @@ class Simulation:
         167.06442443573454
         """
 
-        if self.energy_method_str == 'neighbor list':
+        if self.energy_method_str == "neighbor list":
             from .potential import _get_total_energy
+
             self.update_neighbor_list()
-            energy = _get_total_energy(self.positions, self.box_vectors, self.pair_potential, self.neighbor_list,
-                                       self.sigma_func, self.epsilon_func)
+            energy = _get_total_energy(
+                self.positions,
+                self.box_vectors,
+                self.pair_potential,
+                self.neighbor_list,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return float(energy)
-        elif self.energy_method_str == 'double loop':
+        elif self.energy_method_str == "double loop":
             from .potential import _get_total_energy_double_loop
-            energy = _get_total_energy_double_loop(self.positions, self.box_vectors, self.pair_potential,
-                                                   self.sigma_func, self.epsilon_func)
+
+            energy = _get_total_energy_double_loop(
+                self.positions,
+                self.box_vectors,
+                self.pair_potential,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return float(energy)
-        elif self.energy_method_str == 'double loop single core':
+        elif self.energy_method_str == "double loop single core":
             from .potential import _get_total_energy_double_loop_single_core
-            energy = _get_total_energy_double_loop_single_core(self.positions, self.box_vectors, self.pair_potential,
-                                                               self.sigma_func, self.epsilon_func)
+
+            energy = _get_total_energy_double_loop_single_core(
+                self.positions,
+                self.box_vectors,
+                self.pair_potential,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return float(energy)
 
     def get_forces(self) -> np.ndarray:
-        """ Get forces on all particles
+        """Get forces on all particles
 
         Examples
         --------
@@ -514,32 +604,57 @@ class Simulation:
         >>> print(f'Force on particle 0: F_x={forces[0, 0]}, F_y={forces[0, 1]}, F_z={forces[0, 2]}')
         Force on particle 0: F_x=-1.0, F_y=0.0, F_z=0.0
         """
-        if self.force_method_str == 'neighbor list':
+        if self.force_method_str == "neighbor list":
             from .potential import _get_forces
+
             self.update_neighbor_list()
-            forces = _get_forces(self.positions, self.box_vectors, self.pair_force, self.neighbor_list,
-                                 self.sigma_func, self.epsilon_func)
+            forces = _get_forces(
+                self.positions,
+                self.box_vectors,
+                self.pair_force,
+                self.neighbor_list,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return forces
-        elif self.force_method_str == 'double loop':
+        elif self.force_method_str == "double loop":
             from .potential import _get_forces_double_loop
-            forces = _get_forces_double_loop(self.positions, self.box_vectors, self.pair_force,
-                                             self.sigma_func, self.epsilon_func)
+
+            forces = _get_forces_double_loop(
+                self.positions,
+                self.box_vectors,
+                self.pair_force,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return forces
-        elif self.force_method_str == 'double loop single core':
+        elif self.force_method_str == "double loop single core":
             from .potential import _get_forces_double_loop_single_core
-            forces = _get_forces_double_loop_single_core(self.positions, self.box_vectors, self.pair_force,
-                                                         self.sigma_func, self.epsilon_func)
+
+            forces = _get_forces_double_loop_single_core(
+                self.positions,
+                self.box_vectors,
+                self.pair_force,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return forces
-        elif self.force_method_str == 'vectorized':
+        elif self.force_method_str == "vectorized":
             from .potential import _get_forces_vectorized
-            forces = _get_forces_vectorized(self.positions, self.box_vectors, self.pair_force,
-                                            self.sigma_func, self.epsilon_func)
+
+            forces = _get_forces_vectorized(
+                self.positions,
+                self.box_vectors,
+                self.pair_force,
+                self.sigma_func,
+                self.epsilon_func,
+            )
             return forces
         else:
-            raise ValueError(f'Unknown force method: {self.force_method_str}')
+            raise ValueError(f"Unknown force method: {self.force_method_str}")
 
-    def wrap_into_box(self):
-        """ Wrap all particles into box
+    def wrap_into_box(self) -> None:
+        """Wrap all particles into box
 
         Examples
         --------
@@ -560,10 +675,11 @@ class Simulation:
         [1 0 0]
         """
         from .positions import wrap_into_box
+
         wrap_into_box(self.positions, self.image_positions, self.box_vectors)
 
-    def step(self):
-        """ Make one step in the simulation
+    def step(self) -> None:
+        """Make one step in the simulation
 
         Examples
         --------
@@ -572,19 +688,23 @@ class Simulation:
         >>> sim = Simulation()
         >>> sim.step()
         """
-        from .integrator import make_one_step, make_one_step_leap_frog
+        from .integrator import make_one_step
 
         self.update_neighbor_list()
         forces = self.get_forces()
         old_state = self.positions, self.velocities, self.betas
-        parameters = self.time_step, self.temperature_target, self.temperature_damping_time
+        parameters = (
+            self.time_step,
+            self.temperature_target,
+            self.temperature_damping_time,
+        )
         new_state = make_one_step(*old_state, forces, self.masses, *parameters)
         self.positions, self.velocities, self.betas = new_state
         self.wrap_into_box()
         self.number_of_steps += 1
 
-    def step_leap_frog(self):
-        """ Make one step in the simulation using the NVE Leap-frog integrator
+    def step_leap_frog(self) -> None:
+        """Make one step in the simulation using the NVE Leap-frog integrator
 
         Examples
         --------
@@ -597,14 +717,14 @@ class Simulation:
 
         self.update_neighbor_list()
         forces = self.get_forces()
-        old_state = self.positions, self.velocities
-        new_state = make_one_step_leap_frog(*old_state, forces, self.masses, self.time_step)
-        self.positions, self.velocities = new_state
+        self.positions, self.velocities = make_one_step_leap_frog(
+            self.positions, self.velocities, forces, self.masses, self.time_step
+        )
         self.wrap_into_box()
         self.number_of_steps += 1
 
-    def run(self, steps: int = 1000):
-        """ Run simulation
+    def run(self, steps: int = 1000) -> None:
+        """Run simulation
 
         Examples
         --------
@@ -616,11 +736,13 @@ class Simulation:
         for i in range(steps):
             self.step()
 
-    def set_integrator(self,
-                       time_step: float = None,
-                       target_temperature: float = None,
-                       temperature_damping_time: float = None):
-        """ Set integrator parameters
+    def set_integrator(
+        self,
+        time_step: float = None,
+        target_temperature: float = None,
+        temperature_damping_time: float = None,
+    ) -> None:
+        """Set integrator parameters
 
         Examples
         --------
@@ -637,7 +759,7 @@ class Simulation:
             self.temperature_damping_time = np.float64(temperature_damping_time)
 
     def number_of_particles(self) -> int:
-        """ Get number of particles
+        """Get number of particles
 
         Examples
         --------
@@ -650,7 +772,7 @@ class Simulation:
         return self.positions.shape[0]
 
     def get_density(self) -> float:
-        """ Get density of the system
+        """Get density of the system
 
         Examples
         --------
@@ -662,8 +784,8 @@ class Simulation:
         """
         return float(self.number_of_particles() / self.get_volume())
 
-    def set_density(self, density: float = 1.0):
-        """ Set density of the system
+    def set_density(self, density: float = 1.0) -> None:
+        """Set density of the system
 
         Examples
         --------
@@ -680,7 +802,7 @@ class Simulation:
         self.scale_box(scale_factor)
 
     def get_dimensions_of_space(self) -> int:
-        """ Get dimensions of space
+        """Get dimensions of space
 
         Examples
         --------
@@ -693,7 +815,7 @@ class Simulation:
         return int(self.box_vectors.shape[0])
 
     def get_temperature(self) -> float:
-        """ Get temperature of the system
+        """Get temperature of the system
 
         Examples
         --------
@@ -707,12 +829,14 @@ class Simulation:
         v = self.velocities
         dimensions_of_space = self.get_dimensions_of_space()
         number_of_particles = self.number_of_particles()
-        v_squared = np.sum(v ** 2, axis=1)
-        temperature = np.sum(m * v_squared) / (dimensions_of_space * number_of_particles)
+        v_squared = np.sum(v**2, axis=1)
+        temperature = np.sum(m * v_squared) / (
+            dimensions_of_space * number_of_particles
+        )
         return float(temperature)
 
     def get_configurational_temperature(self) -> float:
-        """ Get configurational temperature of the system defined as the ratio
+        """Get configurational temperature of the system defined as the ratio
         of the force squared over the laplacian: T_c=⟨[∇U(r)]²⟩/⟨∇²U(r)⟩
         where ⟨...⟩ is average over all particles.
 
@@ -725,14 +849,21 @@ class Simulation:
         Configurational temperature: 0
         """
         forces = self.get_forces()
-        force_squared = np.sum(forces ** 2, axis=1)
+        force_squared = np.sum(forces**2, axis=1)
         numerator = np.mean(force_squared)  # Avg. Force squared
         laplacian = self.get_laplacian()
         denominator = np.mean(laplacian)  # Laplacian of the potential
         return float(numerator / denominator)
 
-    def get_radial_distribution_function(self, r_bins: np.ndarray) -> [np.ndarray, np.ndarray]:
-        """ Get radial distribution function
+    def get_radial_distribution_function(
+        self, r_bins: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Get radial distribution function.
+
+        The radial distribution function g(r) is a measure of the probability
+        of finding a particle at a distance r from another particle, relative
+        to the probability of finding a particle in an ideal gas with the same
+        density.
 
         Examples
         --------
@@ -743,14 +874,27 @@ class Simulation:
         >>> g_r = sim.get_radial_distribution_function(r_bins=r_bins)
         """
         from .positions import get_radial_distribution_function
-        r, g_r = get_radial_distribution_function(self.positions, self.positions, self.box_vectors, r_bins)
+
+        r, g_r = get_radial_distribution_function(
+            self.positions, self.positions, self.box_vectors, r_bins
+        )
         return r, g_r
 
-    def get_number_of_particles(self):
+    def get_number_of_particles(self) -> int:
+        """Return number of particle
+
+        Examples
+        --------
+
+        >>> from dompap import Simulation
+        >>> sim = Simulation()
+        >>> print(sim.get_number_of_particles())
+        125
+        """
         return self.positions.shape[0]
 
     def get_kinetic_energy(self) -> float:
-        """ Get kinetic energy of the system
+        """Get kinetic energy of the system
 
         Examples
         --------
@@ -766,7 +910,7 @@ class Simulation:
         return float(0.5 * np.sum(m * v * v))
 
     def get_diameters(self) -> np.ndarray:
-        """ Get diameters of particles
+        """Get diameters of particles
 
         Examples
         --------
@@ -784,7 +928,7 @@ class Simulation:
         return diameters
 
     def get_time(self) -> float:
-        """ Get time of the simulation
+        """Get time of the simulation
 
         Examples
         --------
@@ -800,25 +944,30 @@ class Simulation:
         return float(self.number_of_steps * self.time_step)
 
     def get_virial(self) -> float:
-        """ Get virial of the system
+        """Get virial of the system
 
         Examples
         --------
 
         >>> from dompap import Simulation
         >>> sim = Simulation()
-        >>> sim.set_random_velocities(temperature=0.0)
         >>> print(sim.get_virial())
         0.0
         """
         from .potential import _get_virial_double_loop
+
         self.update_neighbor_list()
-        virial = _get_virial_double_loop(self.positions, self.box_vectors, self.pair_force,
-                                         self.sigma_func, self.epsilon_func)
+        virial = _get_virial_double_loop(
+            self.positions,
+            self.box_vectors,
+            self.pair_force,
+            self.sigma_func,
+            self.epsilon_func,
+        )
         return float(virial)
 
     def get_pressure(self) -> float:
-        """ Get pressure of the system
+        """Get pressure of the system
 
         Examples
         --------
@@ -839,7 +988,7 @@ class Simulation:
         return float(P_c + P_id)
 
     def get_volume(self) -> float:
-        """ Get volume of the system
+        """Get volume of the system
 
         Examples
         --------
@@ -851,8 +1000,8 @@ class Simulation:
         """
         return float(np.prod(self.box_vectors))
 
-    def set_particle_types(self, types):
-        """ Set particle types
+    def set_particle_types(self, types) -> None:
+        """Set particle types
 
         Examples
         --------
@@ -867,8 +1016,10 @@ class Simulation:
         """
         self.particle_types = np.ones_like(self.masses, dtype=np.int32) * types
 
-    def to_disk(self, particle_data='simulation.csv', meta_data='simulation.toml'):
-        """ Save simulation data to disk.
+    def to_disk(
+        self, particle_data="simulation.csv", meta_data="simulation.toml"
+    ) -> None:
+        """Save simulation data to disk.
 
         Particle data as CSV file, and meta data as TOML file.
         """
@@ -896,38 +1047,45 @@ class Simulation:
                 data += f",{self.image_positions[n, d]}"
             for d in range(dimensions_of_space):
                 data += f",{self.betas[n, d]}"
-        print(header + data, file=open(particle_data, 'w'))
+        print(header + data, file=open(particle_data, "w"))
 
         # Save meta data to TOML file
         meta_data_dict = {
-            'box_vectors': self.box_vectors.tolist(),
-            'dimensions_of_space': self.get_dimensions_of_space(),
-            'number_of_particles': self.number_of_particles(),
-            'temperature': self.get_temperature(),
-            'potential_energy': self.get_potential_energy(),
-            'kinetic_energy': self.get_kinetic_energy(),
-            'pressure': self.get_pressure(),
-            'virial': self.get_virial(),
-            'density': self.get_density(),
-            'volume': self.get_volume(),
-            'pair_potential_str': self.pair_potential_str,
-            'pair_potential_r_cut': float(self.pair_potential_r_cut),
-            'neighbor_list_skin': float(self.neighbor_list_skin),
-            'max_number_of_neighbors': int(self.max_number_of_neighbors),
-            'neighbor_list_method_str': self.neighbor_list_method_str,
-            'energy_method_str': self.energy_method_str,
-            'force_method_str': self.force_method_str,
-            'time_step': float(self.time_step),
-            'temperature_target': float(self.temperature_target),
-            'temperature_damping_time': float(self.temperature_damping_time),
-            'number_of_steps': int(self.number_of_steps),
-            'number_of_neighbor_list_updates': int(self.number_of_neighbor_list_updates),
+            "box_vectors": self.box_vectors.tolist(),
+            "dimensions_of_space": self.get_dimensions_of_space(),
+            "number_of_particles": self.number_of_particles(),
+            "temperature": self.get_temperature(),
+            "potential_energy": self.get_potential_energy(),
+            "kinetic_energy": self.get_kinetic_energy(),
+            "pressure": self.get_pressure(),
+            "virial": self.get_virial(),
+            "density": self.get_density(),
+            "volume": self.get_volume(),
+            "pair_potential_str": self.pair_potential_str,
+            "pair_potential_r_cut": float(self.pair_potential_r_cut),
+            "neighbor_list_skin": float(self.neighbor_list_skin),
+            "max_number_of_neighbors": int(self.max_number_of_neighbors),
+            "neighbor_list_method_str": self.neighbor_list_method_str,
+            "energy_method_str": self.energy_method_str,
+            "force_method_str": self.force_method_str,
+            "time_step": float(self.time_step),
+            "temperature_target": float(self.temperature_target),
+            "temperature_damping_time": float(self.temperature_damping_time),
+            "number_of_steps": int(self.number_of_steps),
+            "number_of_neighbor_list_updates": int(
+                self.number_of_neighbor_list_updates
+            ),
         }
-        print(toml.dumps(meta_data_dict), file=open(meta_data, 'w'))
+        print(toml.dumps(meta_data_dict), file=open(meta_data, "w"))
 
-    def from_disk(self, particle_data='simulation.csv', meta_data='simulation.toml',
-                  verbose=False, set_only_particle_data=False) -> dict:
-        """ Load simulation data from disk.
+    def from_disk(
+        self,
+        particle_data="simulation.csv",
+        meta_data="simulation.toml",
+        verbose=False,
+        set_only_particle_data=False,
+    ) -> dict:
+        """Load simulation data from disk.
 
         Particle data as CSV file, and meta data as TOML file.
          Set simulation box vectors, and particle data. Return meta data from disk as dict.
@@ -935,28 +1093,29 @@ class Simulation:
 
         # Check of files exist
         import os.path
+
         if not os.path.isfile(particle_data):
-            raise FileNotFoundError(f'File not found: {particle_data}')
+            raise FileNotFoundError(f"File not found: {particle_data}")
         if not os.path.isfile(meta_data):
-            raise FileNotFoundError(f'File not found: {meta_data}')
+            raise FileNotFoundError(f"File not found: {meta_data}")
 
         # Get dimension of space and box vectors from metadata
         meta_data_dict = toml.load(meta_data)
-        box_vectors = np.array(meta_data_dict['box_vectors'], dtype=np.float64)
+        box_vectors = np.array(meta_data_dict["box_vectors"], dtype=np.float64)
         dimensions_of_space = box_vectors.shape[0]
-        number_of_particles = meta_data_dict['number_of_particles']
+        number_of_particles = meta_data_dict["number_of_particles"]
         if verbose:
-            print('    Old values')
+            print("    Old values")
             print(f"Dimensions of space: {self.get_dimensions_of_space()}")
             print(f"number_of_particles: {self.number_of_particles()}")
             print(f"Box vectors: {self.box_vectors}")
-            print('    New values')
+            print("    New values")
             print(f"Dimensions of space: {dimensions_of_space}")
             print(f"Box vectors: {box_vectors}")
             print(f"number_of_particles: {number_of_particles}")
 
         if verbose:
-            print('    Old values for particle 0:')
+            print("    Old values for particle 0:")
             print(f"particle_type: {self.particle_types[0]}")
             print(f"mass: {self.masses[0]}")
             print(f"position: {self.positions[0]}")
@@ -969,41 +1128,49 @@ class Simulation:
 
         # Reallocate arrays with particle data
         self.particle_types = np.zeros(shape=(number_of_particles, 1), dtype=np.int32)
-        self.positions = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
-        self.velocities = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
-        self.image_positions = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.int32)
-        self.betas = np.zeros(shape=(number_of_particles, dimensions_of_space), dtype=np.float64)
+        self.positions = np.zeros(
+            shape=(number_of_particles, dimensions_of_space), dtype=np.float64
+        )
+        self.velocities = np.zeros(
+            shape=(number_of_particles, dimensions_of_space), dtype=np.float64
+        )
+        self.image_positions = np.zeros(
+            shape=(number_of_particles, dimensions_of_space), dtype=np.int32
+        )
+        self.betas = np.zeros(
+            shape=(number_of_particles, dimensions_of_space), dtype=np.float64
+        )
         self.masses = np.zeros(shape=(number_of_particles, 1), dtype=np.float64)
 
         # Get particle data from CSV file
         with open(particle_data) as file:
             lines = file.readlines()
-        col_names = lines[0].split(',')
+        col_names = lines[0].split(",")
         for i, line in enumerate(lines[1:]):
-            cols = line.split(',')
+            cols = line.split(",")
             for value, name in zip(cols, col_names):
-                if '_' in name:  # This is a position, velocity, image position or beta
-                    name, d = name.split('_')
+                if "_" in name:  # This is a position, velocity, image position or beta
+                    name, d = name.split("_")
                     d = int(d)
-                    if name == 'pos':
+                    if name == "pos":
                         self.positions[i, d] = float(value)
-                    elif name == 'vel':
+                    elif name == "vel":
                         self.velocities[i, d] = float(value)
-                    elif name == 'imgpos':
+                    elif name == "imgpos":
                         self.image_positions[i, d] = int(value)
-                    elif name == 'beta':
+                    elif name == "beta":
                         self.betas[i, d] = float(value)
                     else:
-                        raise ValueError(f'Unknown column name: {name}')
+                        raise ValueError(f"Unknown column name: {name}")
                 else:  # This is a particle type or mass
-                    if name == 'ptype':
+                    if name == "ptype":
                         self.particle_types[i, 0] = int(value)
-                    elif name == 'mass':
+                    elif name == "mass":
                         self.masses[i, 0] = float(value)
                     else:
-                        raise ValueError(f'Unknown column name: {name}')
+                        raise ValueError(f"Unknown column name: {name}")
         if verbose:
-            print('    New values for particle 0:')
+            print("    New values for particle 0:")
             print(f"particle_type: {self.particle_types[0]}")
             print(f"mass: {self.masses[0]}")
             print(f"position: {self.positions[0]}")
@@ -1013,22 +1180,30 @@ class Simulation:
 
         # Set other simulation variables
         if not set_only_particle_data:
-            self.set_pair_potential(pair_potential_str=meta_data_dict['pair_potential_str'],
-                                    r_cut=meta_data_dict['pair_potential_r_cut'],
-                                    force_method=meta_data_dict['force_method_str'],
-                                    energy_method=meta_data_dict['energy_method_str'])
-            self.set_neighbor_list(skin=meta_data_dict['neighbor_list_skin'],
-                                   max_number_of_neighbors=meta_data_dict['max_number_of_neighbors'],
-                                   method_str=meta_data_dict['neighbor_list_method_str'])
-            self.set_integrator(time_step=meta_data_dict['time_step'],
-                                target_temperature=meta_data_dict['temperature_target'],
-                                temperature_damping_time=meta_data_dict['temperature_damping_time'])
-            self.number_of_steps = meta_data_dict['number_of_steps']
-            self.number_of_neighbor_list_updates = meta_data_dict['number_of_neighbor_list_updates']
+            self.set_pair_potential(
+                pair_potential_str=meta_data_dict["pair_potential_str"],
+                r_cut=meta_data_dict["pair_potential_r_cut"],
+                force_method=meta_data_dict["force_method_str"],
+                energy_method=meta_data_dict["energy_method_str"],
+            )
+            self.set_neighbor_list(
+                skin=meta_data_dict["neighbor_list_skin"],
+                max_number_of_neighbors=meta_data_dict["max_number_of_neighbors"],
+                method_str=meta_data_dict["neighbor_list_method_str"],
+            )
+            self.set_integrator(
+                time_step=meta_data_dict["time_step"],
+                target_temperature=meta_data_dict["temperature_target"],
+                temperature_damping_time=meta_data_dict["temperature_damping_time"],
+            )
+            self.number_of_steps = meta_data_dict["number_of_steps"]
+            self.number_of_neighbor_list_updates = meta_data_dict[
+                "number_of_neighbor_list_updates"
+            ]
         return meta_data_dict
 
     def get_laplacian(self) -> np.ndarray:
-        """ Get particle laplacians
+        """Get particle laplacians
 
         Examples
         --------
@@ -1040,9 +1215,15 @@ class Simulation:
         12.0
         """
         from .potential import _get_laplacian
-        self.update_neighbor_list()
-        laplacian = _get_laplacian(self.positions, self.box_vectors,
-                             self.pair_force, self.pair_curvature, self.neighbor_list,
-                             self.sigma_func, self.epsilon_func)
-        return laplacian
 
+        self.update_neighbor_list()
+        laplacian = _get_laplacian(
+            self.positions,
+            self.box_vectors,
+            self.pair_force,
+            self.pair_curvature,
+            self.neighbor_list,
+            self.sigma_func,
+            self.epsilon_func,
+        )
+        return laplacian
