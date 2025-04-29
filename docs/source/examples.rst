@@ -16,11 +16,3 @@ Minimal descriptive
 .. literalinclude:: ../../examples/minimal_descriptive.py
     :language: python
 
-Section
-=======
-
-Subsection
-----------
-
-Subsubsection
-^^^^^^^^^^^^^

@@ -7,6 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 
+# pip install sphinx myst_nb pydata_sphinx_theme
+
 import os, sys
 sys.path.insert(0, os.path.abspath('../..'))
 # Fix: export PYTHONPATH="${PYTHONPATH}:/home/$USER/PycharmProjects/dompap"
