@@ -6,8 +6,7 @@ import pandas as pd
 from dompap import Simulation
 from dompap.tools import progress_bar, autotune
 
-def plot_sim():
-    global sim
+def plot_sim(sim):
     plt.figure(figsize=(6, 6))
     plt.title(f'Time: {sim.get_time():0.3f}, Temperature: {sim.get_temperature():0.3f}')
     plt.plot(sim.positions[:, 0], sim.positions[:, 1], 'o')
@@ -35,7 +34,7 @@ print(f'{sim.number_of_particles()=}')
 print(f'{sim.get_density()=}')
 
 
-plot_sim()
+plot_sim(sim)
 
 # Melt crystal
 steps_melt = 200
@@ -44,7 +43,7 @@ for step in range(steps_melt):
     if step % 20 == 0:
         print(f'Melt {step=}: {sim.get_potential_energy()=}')
 
-plot_sim()
+plot_sim(sim)
 
 # Equilibrate
 sim.set_integrator(target_temperature=0.002)
@@ -56,7 +55,7 @@ for step in range(steps_equilibrate):
         print(f'Equilibrate {step}/{steps_equilibrate}={step/steps_equilibrate*100:0.1f}%: '
               f'E={sim.get_potential_energy()} T={sim.get_temperature()} P={sim.get_pressure()}')
 
-plot_sim()
+plot_sim(sim)
 
 print('Autotuning...')
 sim = autotune(sim, steps=2_000, verbose=True, plot=True, smallest_skin=0.3, step_skin=0.1, test_double_loop=False)
