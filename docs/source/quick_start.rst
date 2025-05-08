@@ -18,6 +18,8 @@ Download source code
 .. code-block:: bash
 
     git clone https://github.com/urpedersen/dompap
+    cd dompap
+    pip install .
 
 Usage Example
 =============
