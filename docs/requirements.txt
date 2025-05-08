@@ -1,1 +1,10 @@
+numpy
+scipy
+sympy
+numba
+matplotlib
+pandas
+toml
 sphinx
+myst_nb 
+pydata_sphinx_theme
