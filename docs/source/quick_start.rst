@@ -17,7 +17,7 @@ Download source code
 
 .. code-block:: bash
 
-    git clone ...
+    git clone https://github.com/urpedersen/dompap
 
 Usage Example
 =============
