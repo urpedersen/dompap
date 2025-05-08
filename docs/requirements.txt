@@ -8,3 +8,4 @@ toml
 sphinx
 myst_nb 
 pydata_sphinx_theme
+PyStemmer
